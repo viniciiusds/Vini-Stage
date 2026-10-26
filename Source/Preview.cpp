@@ -37,8 +37,9 @@ int main(int argc,char** argv){
     fader->keyPressed(juce::KeyPress(juce::KeyPress::homeKey));require(volume->getValue()==0,"Fader bottom is not mute");
     fader->keyPressed(juce::KeyPress(juce::KeyPress::endKey));
     fader->setValue(-5.4,juce::sendNotificationSync);require(fader->getValue()==-5,"Fader does not snap to whole dB");
-    parameter(*processor,"Sound 1 Volume")->setValueNotifyingHost(volume->getValueForText("-3 dB"));
-    auto* second=parameter(*processor,"Sound 2 Volume");second->setValueNotifyingHost(second->getValueForText("-8 dB"));
+    const bool unity=argc>4&&juce::String(argv[4])=="--unity";
+    parameter(*processor,"Sound 1 Volume")->setValueNotifyingHost(volume->getValueForText(unity?"0 dB":"-3 dB"));
+    auto* second=parameter(*processor,"Sound 2 Volume");second->setValueNotifyingHost(second->getValueForText(unity?"0 dB":"-8 dB"));
     parameter(*processor,"Sound 2 On")->setValueNotifyingHost(0);
     std::cout<<"PASS real editor fader: 1 dB keyboard steps, integer snapping, 0 dB cap and mute\n";
     auto image=editor->createComponentSnapshot(editor->getLocalBounds(),true,2.0f);

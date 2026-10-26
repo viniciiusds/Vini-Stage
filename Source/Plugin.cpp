@@ -319,7 +319,7 @@ public:
         name.setBounds(38,78,190,42);
         select.setBounds(name.getBounds().getCentreX()-75,136,150,33);
         on.setBounds(name.getBounds().getCentreX()-24,202,48,49);
-        volume.setBounds(getWidth()-146,90,46,170);
+        volume.setBounds(getWidth()-146,106,46,154);
         ledBounds={volume.getRight()+10,volume.getY()+Hardware::faderInset,18,volume.getHeight()-2*Hardware::faderInset};
         readout.setBounds(volume.getX(),61,ledBounds.getRight()-volume.getX(),25);
     }

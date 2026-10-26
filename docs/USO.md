@@ -1,4 +1,4 @@
-# Vini Stage 0.3.1 — versão de teste
+# Vini Stage 0.3.2 — versão de teste
 
 Instrumento VST3 com botão **Select Sound** para abrir um arquivo `.npno` diretamente. Os samples são decodificados em memória; não é necessário converter ou importar WAVs.
 
@@ -68,3 +68,7 @@ Novo painel vermelho e cinza conforme o layout aprovado, quatro parafusos extern
 ## Versão 0.3.1
 
 Progresso real de leitura e decodificação no visor do timbre (Loading... X%). Botões Select Sound e ON/OFF centralizados pelo visor do timbre, sem o texto Volume. Visor em dB com a largura do conjunto fader + LEDs, e coluna de LEDs alinhada aos limites verticais da trilha do fader.
+
+## Versão 0.3.2
+
+Conjunto fader + LEDs reduzido um pouco na altura, mantendo o alinhamento e a base. A alça em 0 dB fica com margem de 20 px abaixo do visor. Sem alterações no volume, nos timbres ou no estado salvo dos projetos.
