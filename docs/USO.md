@@ -4,6 +4,16 @@ Instrumento VST3 com botão **Select Sound** para abrir um arquivo `.npno` diret
 
 ## Instalar e tocar
 
+### Pelo instalador `.pkg`
+
+Feche o Ableton, abra `Vini-Stage-<versão>-Universal.pkg`, siga o assistente e informe a senha de administrador. O mesmo arquivo serve para Intel (alvo macOS 10.13+) e Apple Silicon (11+). O destino é `/Library/Audio/Plug-Ins/VST3/Vini Stage.vst3`, disponível para todos os usuários. Abra o Live novamente após instalar.
+
+Uma versão nova substitui a anterior na pasta global. Para evitar duplicidade, uma cópia igual ou mais antiga na pasta VST3 do usuário conectado é guardada em `~/Library/Application Support/Vini Stage/Plugin Backups/`. Versões mais novas e plugins com outra identidade são preservados. Timbres e projetos não são alterados.
+
+Este pacote ainda não tem certificado Developer ID Installer nem notarização da Apple; portanto não há garantia de abertura sem alerta no macOS. A instalação real no High Sierra precisa ser conferida no Mac de 2011.
+
+### Instalação manual / desenvolvimento
+
 1. Feche o Ableton antes de instalar ou atualizar o plugin.
 2. Neste M4, as novas compilações já instalam o plugin automaticamente em `~/Library/Audio/Plug-Ins/VST3/`. Para instalar em outro Mac, copie **Vini Stage.vst3** para essa pasta ou execute `Instalar.command`.
 3. No Live 11, abra Preferences → Plug-Ins e habilite **Use VST3 Plug-In System Folders**. Use **Rescan** se necessário.

@@ -1,0 +1,16 @@
+#!/bin/bash
+set -euo pipefail
+target_volume="${3:-/}"
+# Never modify the running user's home when installing onto another volume.
+[[ "$target_volume" == / ]] || exit 0
+console_user="$(/usr/bin/stat -f '%Su' /dev/console)"
+case "$console_user" in root|loginwindow|_mbsetupuser|"") exit 0;; esac
+user_home="$(/usr/bin/dscl . -read "/Users/$console_user" NFSHomeDirectory 2>/dev/null | /usr/bin/sed -n 's/^NFSHomeDirectory: //p')"
+[[ "$user_home" == /* && -d "$user_home" ]] || exit 0
+script_dir="$(cd "$(dirname "$0")" && pwd)"
+if ! /bin/bash "$script_dir/migrate-user-copy.sh" "$user_home" "/Library/Audio/Plug-Ins/VST3/Vini Stage.vst3" "$console_user"; then
+    # The global installation succeeded; an optional old-copy backup must not
+    # leave Installer reporting failure after installing the new plugin.
+    echo "Vini Stage: user-copy backup could not be completed; check for a duplicate user VST3."
+fi
+exit 0

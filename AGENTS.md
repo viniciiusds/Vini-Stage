@@ -12,3 +12,5 @@
 - Preserve the approved red/charcoal hardware layout, no manufacturer text in the header, only four external screws and no screws inside the sound sections. README imagery must be rendered from the actual current editor, not the concept image.
 
 - Display actual file-read/decode progress as Loading... X% in each sound LCD. Do not replace it with timer-driven progress. Align the buttons with the sound LCD and the LED column with the fader track; keep the dB LCD as wide as the fader/LED group and no visible Volume heading.
+
+- `package.sh` produces a legacy-compressed Universal PKG targeting macOS 10.13+, installing globally in `/Library/Audio/Plug-Ins/VST3/`. Keep its stable package identifier, non-relocatable/version-checked atomic bundle upgrade and safe per-user backup migration. Do not claim Developer ID signing, notarization or real High Sierra installation unless actually verified. Package tests must use isolated temporary roots and never run a real system installation without the user's explicit request.

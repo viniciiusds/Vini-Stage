@@ -4,6 +4,23 @@ Instrumento **Vini Stage**: um VST3 simples para carregar arquivos Nord `.npno` 
 
 ![Layout vermelho com duas seções, faders verticais, LEDs e volume em dB](docs/interface-0.3.1.png)
 
+## Instalador Universal `.pkg`
+
+O instalador contém o mesmo VST3 Universal para **Intel/High Sierra 10.13** e **Apple Silicon/M4**. Feche o Live, abra o `.pkg`, siga o assistente e informe a senha de administrador. Ele instala para todos os usuários em `/Library/Audio/Plug-Ins/VST3/Vini Stage.vst3`.
+
+As próximas versões usam o mesmo identificador de pacote e substituem o bundle antigo nesse caminho. O pacote não é relocável e não sobrescreve uma versão global mais nova. Uma cópia anterior da pasta VST3 do usuário conectado, com a mesma identidade e versão igual ou inferior, é movida para `~/Library/Application Support/Vini Stage/Plugin Backups/` para evitar duplicidade; versões mais novas ou plugins com outra identidade não são movidos. Projetos e arquivos `.npno` não são alterados.
+
+O pacote atual é de teste, **sem assinatura Developer ID Installer e sem notarização**; o macOS pode impedir sua abertura até haver aprovação pelo usuário. A experiência de distribuição sem alertas exige certificados Developer ID e notarização da Apple. O binário declara mínimo 10.13 para Intel, mas a instalação/execução real no High Sierra continua dependendo de validação no Mac de 2011. Os testes de pacote conferem conteúdo e scripts em diretórios temporários, sem instalar no sistema.
+
+`build.sh` também gera o instalador em `dist/`. Para empacotar um VST3 já compilado:
+
+```bash
+bash package.sh
+python3 packaging/test_package.py dist/Vini-Stage-0.3.1-Universal.pkg
+```
+
+O nome e a versão do `.pkg` são obtidos do VST3 compilado. Para assinar o pacote, defina `INSTALLER_SIGN_IDENTITY` com a identidade de um certificado **Developer ID Installer** disponível no chaveiro. Isso não faz a notarização automaticamente; o plugin e o pacote de distribuição ainda precisam do fluxo de assinatura e notarização apropriado.
+
 ## Recursos atuais — 0.3.1
 
 - Carregamento de `.npno` em segundo plano, com **Loading... X%** no visor e sem conversão manual para WAV. O percentual acompanha a leitura do arquivo e a decodificação das gravações.

@@ -21,3 +21,4 @@ fi
     -DCMAKE_BUILD_TYPE=Release '-DCMAKE_OSX_ARCHITECTURES=x86_64;arm64' -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13
 "$cmake_bin" --build "$project_dir/build" --config Release --target NpnoPlayer_VST3 NpnoPlayer_Standalone -j 4
 codesign --force --deep --sign - "$project_dir/build/NpnoPlayer_artefacts/Release/Standalone/Vini Stage.app"
+bash "$project_dir/package.sh" "$project_dir/build" "$project_dir/dist"
