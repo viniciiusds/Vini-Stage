@@ -1,8 +1,8 @@
 # NordPlayer
 
-Instrumento **NPno Player**: um VST3 simples para carregar arquivos Nord `.npno` diretamente no Ableton Live 11. Clique em **Select Sound**, escolha um arquivo e toque por MIDI.
+Instrumento **Vini Stage**: um VST3 simples para carregar arquivos Nord `.npno` diretamente no Ableton Live 11. Clique em **Select Sound**, escolha um arquivo e toque por MIDI.
 
-## Recursos atuais — 0.1.1
+## Recursos atuais — 0.1.2
 
 - Carregamento de `.npno` em segundo plano, sem conversão manual para WAV.
 - Mapeamento de teclas, transposição, ajuste fino e camadas de velocity.
@@ -28,14 +28,14 @@ bash build.sh
 O script usa JUCE 8.0.12 e `nord-format 0.8.0`, compila as duas arquiteturas e produz:
 
 ```text
-build/NpnoPlayer_artefacts/Release/VST3/NPno Player.vst3
-build/NpnoPlayer_artefacts/Release/Standalone/NPno Player.app
+build/NpnoPlayer_artefacts/Release/VST3/Vini Stage.vst3
+build/NpnoPlayer_artefacts/Release/Standalone/Vini Stage.app
 ```
 
 **Cada compilação bem-sucedida do VST3 assina, verifica e instala automaticamente** em:
 
 ```text
-~/Library/Audio/Plug-Ins/VST3/NPno Player.vst3
+~/Library/Audio/Plug-Ins/VST3/Vini Stage.vst3
 ```
 
 Feche o Live antes de atualizar o plugin. Reabra e use Rescan se necessário. Para um build apenas de empacotamento, sem instalar, configure `-DNPNO_INSTALL_AFTER_BUILD=OFF`.
@@ -47,7 +47,7 @@ Para reutilizar uma cópia local do JUCE, defina `JUCE_PATH` antes de executar `
 ```bash
 cmake --build build --target NpnoSmoke --config Release -j 4
 build/NpnoSmoke_artefacts/Release/NpnoSmoke \
-  "$PWD/build/NpnoPlayer_artefacts/Release/VST3/NPno Player.vst3" \
+  "$PWD/build/NpnoPlayer_artefacts/Release/VST3/Vini Stage.vst3" \
   "/caminho/para/piano.npno"
 ```
 

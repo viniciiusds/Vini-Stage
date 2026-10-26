@@ -8,7 +8,7 @@ class Player final : public juce::AudioProcessor {
 public:
     Player() : AudioProcessor(BusesProperties().withOutput("Output", juce::AudioChannelSet::stereo(), true)) {}
     ~Player() override { if (loader.joinable()) loader.join(); }
-    const juce::String getName() const override { return "NPno Player"; }
+    const juce::String getName() const override { return "Vini Stage"; }
     bool acceptsMidi() const override { return true; }
     bool producesMidi() const override { return false; }
     double getTailLengthSeconds() const override { return 30; }
@@ -195,7 +195,7 @@ public:
         keys.setAvailableRange(21,108); keys.setLowestVisibleKey(48);
         setSize(520,190); startTimerHz(8);
     }
-    void paint(juce::Graphics& g) override {g.fillAll(juce::Colour(0xff202329));g.setColour(juce::Colours::white);g.setFont(21);g.drawText("NPno Player",20,12,getWidth()-40,30,juce::Justification::centred);}
+    void paint(juce::Graphics& g) override {g.fillAll(juce::Colour(0xff202329));g.setColour(juce::Colours::white);g.setFont(21);g.drawText("Vini Stage",20,12,getWidth()-40,30,juce::Justification::centred);}
     void resized() override {select.setBounds(180,50,160,34);label.setBounds(12,90,getWidth()-24,30);keys.setBounds(12,130,getWidth()-24,48);}
 private:
     Player& player; juce::TextButton select; juce::Label label; juce::MidiKeyboardComponent keys; std::unique_ptr<juce::FileChooser> chooser;

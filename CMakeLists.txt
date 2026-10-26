@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "")
-project(NpnoPlayer VERSION 0.1.1 LANGUAGES C CXX)
+project(NpnoPlayer VERSION 0.1.2 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 if(NOT DEFINED JUCE_PATH)
     message(FATAL_ERROR "Configure -DJUCE_PATH=/path/to/JUCE")
@@ -21,9 +21,9 @@ add_library(npno_bridge STATIC IMPORTED GLOBAL)
 set_target_properties(npno_bridge PROPERTIES IMPORTED_LOCATION "${BRIDGE_TARGET}/release/libnpno_bridge.a")
 add_dependencies(npno_bridge npno_rust)
 juce_add_plugin(NpnoPlayer
-    COMPANY_NAME "VD Audio" BUNDLE_ID "audio.vd.npnoplayer"
+    COMPANY_NAME "Vinizera" BUNDLE_ID "audio.vd.npnoplayer"
     PLUGIN_MANUFACTURER_CODE Vdau PLUGIN_CODE Npno
-    FORMATS VST3 Standalone PRODUCT_NAME "NPno Player"
+    FORMATS VST3 Standalone PRODUCT_NAME "Vini Stage"
     IS_SYNTH TRUE NEEDS_MIDI_INPUT TRUE NEEDS_MIDI_OUTPUT FALSE
     IS_MIDI_EFFECT FALSE COPY_PLUGIN_AFTER_BUILD FALSE
     VST3_CATEGORIES Instrument Sampler)
@@ -43,8 +43,8 @@ if(APPLE AND NPNO_INSTALL_AFTER_BUILD)
         COMMAND /usr/bin/codesign --force --deep --sign - "$<TARGET_BUNDLE_DIR:NpnoPlayer_VST3>"
         COMMAND /usr/bin/codesign --verify --deep --strict "$<TARGET_BUNDLE_DIR:NpnoPlayer_VST3>"
         COMMAND ${CMAKE_COMMAND} -E make_directory "$ENV{HOME}/Library/Audio/Plug-Ins/VST3"
-        COMMAND /usr/bin/ditto "$<TARGET_BUNDLE_DIR:NpnoPlayer_VST3>" "$ENV{HOME}/Library/Audio/Plug-Ins/VST3/NPno Player.vst3"
-        COMMAND /usr/bin/codesign --verify --deep --strict "$ENV{HOME}/Library/Audio/Plug-Ins/VST3/NPno Player.vst3"
-        COMMENT "Signing and installing NPno Player.vst3 in the user plug-in folder"
+        COMMAND /usr/bin/ditto "$<TARGET_BUNDLE_DIR:NpnoPlayer_VST3>" "$ENV{HOME}/Library/Audio/Plug-Ins/VST3/Vini Stage.vst3"
+        COMMAND /usr/bin/codesign --verify --deep --strict "$ENV{HOME}/Library/Audio/Plug-Ins/VST3/Vini Stage.vst3"
+        COMMENT "Signing and installing Vini Stage.vst3 in the user plug-in folder"
         VERBATIM)
 endif()

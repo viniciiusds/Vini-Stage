@@ -1,13 +1,13 @@
-# NPno Player 0.1.1 — versão de teste
+# Vini Stage 0.1.2 — versão de teste
 
 Instrumento VST3 com botão **Select Sound** para abrir um arquivo `.npno` diretamente. Os samples são decodificados em memória; não é necessário converter ou importar WAVs.
 
 ## Instalar e tocar
 
 1. Feche o Ableton antes de instalar ou atualizar o plugin.
-2. Neste M4, as novas compilações já instalam o plugin automaticamente em `~/Library/Audio/Plug-Ins/VST3/`. Para instalar em outro Mac, copie **NPno Player.vst3** para essa pasta ou execute `Instalar.command`.
+2. Neste M4, as novas compilações já instalam o plugin automaticamente em `~/Library/Audio/Plug-Ins/VST3/`. Para instalar em outro Mac, copie **Vini Stage.vst3** para essa pasta ou execute `Instalar.command`.
 3. No Live 11, abra Preferences → Plug-Ins e habilite **Use VST3 Plug-In System Folders**. Use **Rescan** se necessário.
-4. Em Plug-Ins → VST3 → VD Audio, coloque **NPno Player** em uma pista MIDI.
+4. Em Plug-Ins → VST3 → Vinizera, coloque **Vini Stage** em uma pista MIDI.
 5. Clique em **Select Sound**, escolha seu `.npno` e aguarde o nome do instrumento aparecer.
 6. Toque pelo teclado MIDI ou use o teclado visual. CC64 controla o sustain.
 
@@ -39,7 +39,7 @@ Foi validado **Clavinet D6 6.1.npno**, stream `0x0464`: 38 gravações, 17 notas
 
 ## Código e dependências
 
-O código do projeto está na pasta `NpnoPlayer` entregue separadamente. Foi usada a revisão `29396c22c93392d6738e021b83196283d6e4d850` do JUCE, selecionada pela tag 8.0.12, e `nord-format 0.8.0` (BSD-3-Clause). Licenças e referências estão em `Licenses/`. Nenhum sample Nord está incluído no pacote de instalação.
+O código do projeto está no repositório NordPlayer. Foi usada a revisão `29396c22c93392d6738e021b83196283d6e4d850` do JUCE, selecionada pela tag 8.0.12, e `nord-format 0.8.0` (BSD-3-Clause). Licenças e referências estão em `Licenses/`. Nenhum sample Nord está incluído no pacote de instalação.
 
 ## Correção 0.1.1
 
