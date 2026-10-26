@@ -1,4 +1,4 @@
-# NordPlayer
+# Vini Stage
 
 Instrumento **Vini Stage**: um VST3 simples para carregar arquivos Nord `.npno` diretamente no Ableton Live 11. Clique em **Select Sound**, escolha um arquivo e toque por MIDI.
 

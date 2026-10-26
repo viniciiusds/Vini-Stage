@@ -39,7 +39,7 @@ Foi validado **Clavinet D6 6.1.npno**, stream `0x0464`: 38 gravações, 17 notas
 
 ## Código e dependências
 
-O código do projeto está no repositório NordPlayer. Foi usada a revisão `29396c22c93392d6738e021b83196283d6e4d850` do JUCE, selecionada pela tag 8.0.12, e `nord-format 0.8.0` (BSD-3-Clause). Licenças e referências estão em `Licenses/`. Nenhum sample Nord está incluído no pacote de instalação.
+O código do projeto está no repositório Vini-Stage. Foi usada a revisão `29396c22c93392d6738e021b83196283d6e4d850` do JUCE, selecionada pela tag 8.0.12, e `nord-format 0.8.0` (BSD-3-Clause). Licenças e referências estão em `Licenses/`. Nenhum sample Nord está incluído no pacote de instalação.
 
 ## Correção 0.1.1
 
