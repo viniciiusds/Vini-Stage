@@ -281,7 +281,7 @@ public:
         };
         volumeAttachment->sendInitialUpdate();
     }
-    ~VolumePanel()override{setLookAndFeel(nullptr);}
+    ~VolumePanel()override{volume.cancelDrag();setLookAndFeel(nullptr);}
     void paint(juce::Graphics& g)override{
         Hardware::lcd(g,readout.getBounds().toFloat());
         g.setColour(juce::Colour(0xffe1e8e7));g.setFont(Hardware::font(22));

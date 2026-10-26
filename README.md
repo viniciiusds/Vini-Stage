@@ -6,6 +6,8 @@ Instrumento **Vini Stage**: um VST3 simples para carregar arquivos Nord `.npno` 
 
 Layout com teclado de **88 teclas (A0–C8)** na parte inferior, clicável com o mouse e com destaque das notas recebidas por MIDI. Logo `vini stage` ao lado de Levels, painel sem parafusos, botões Select/Clear menores e faders/LEDs alongados para cima, com margens iguais acima e abaixo dos LEDs. A imagem é uma captura direta do editor compilado, com um acorde MIDI demonstrativo.
 
+**Correção de arraste em desenvolvimento (na `main`):** os faders preservam o ponto onde a alça foi segurada e atualizam volume, LEDs e visor durante o movimento, antes de soltar o mouse. O teste do editor envia três posições de arraste para cada fader e confere as alterações de parâmetro antes do mouse-up. O instalador 0.4.2 abaixo é anterior a essa correção; nenhum novo pacote foi publicado ainda.
+
 ## Instalador Universal `.pkg`
 
 **[Baixar Vini Stage 0.4.2 Universal.pkg](https://github.com/viniciiusds/Vini-Stage/releases/download/v0.4.2/Vini-Stage-0.4.2-Universal.pkg)** · [Todas as versões](https://github.com/viniciiusds/Vini-Stage/releases)

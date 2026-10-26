@@ -18,6 +18,47 @@ juce::Component* findPiano(juce::Component& parent){
     for(auto* child:parent.getChildren())if(auto* found=findPiano(*child))return found;
     return nullptr;
 }
+void testFaderDrag(juce::AudioProcessor& processor,juce::AudioProcessorEditor& editor){
+    struct Gestures final:juce::AudioProcessorParameter::Listener{
+        int begins=0,ends=0,changes=0;
+        void parameterValueChanged(int,float)override{++changes;}
+        void parameterGestureChanged(int,bool starting)override{starting?++begins:++ends;}
+    };
+    for(int slot=1;slot<=2;++slot){
+        auto* fader=dynamic_cast<juce::Slider*>(findTitle(editor,"Sound "+juce::String(slot)+" Volume"));
+        auto* param=parameter(processor,"Sound "+juce::String(slot)+" Volume");
+        require(fader!=nullptr,"Fader missing for drag test");
+        fader->setValue(-24,juce::sendNotificationSync);
+        const float top=14,bottom=(float)fader->getHeight()-14;
+        auto yFor=[&](double value){return bottom-(float)((value+61)/61)*(bottom-top);};
+        auto start=juce::Point<float>((float)fader->getWidth()/2,yFor(-24)+9);
+        const auto time=juce::Time::getCurrentTime();
+        auto event=[&](juce::Point<float> point,bool held){return juce::MouseEvent(
+            juce::Desktop::getInstance().getMainMouseSource(),point,
+            juce::ModifierKeys(held?juce::ModifierKeys::leftButtonModifier:0),1,0,0,0,0,
+            fader,fader,time,start,time,1,point!=start);};
+        Gestures gestures;param->addListener(&gestures);
+        fader->mouseDown(event(start,true));
+        require(fader->getValue()==-24,"Grabbing fader cap jumps away from current value");
+        for(int target:{-12,-36,-6}){
+            auto point=start.withY(start.y+yFor(target)-yFor(-24));
+            fader->mouseDrag(event(point,true));
+            require(fader->getValue()==target,"Fader does not follow mouse while held");
+            auto expected=std::pow(10.0f,(float)target/20);
+            require(std::abs(param->getValue()-expected)<1e-6f,"Volume parameter waits until mouse release");
+            require(gestures.begins==1&&gestures.ends==0,"Host drag gesture ended before mouse release");
+        }
+        fader->mouseUp(event(start.withY(start.y+yFor(-6)-yFor(-24)),false));
+        require(fader->getValue()==-6&&gestures.begins==1&&gestures.ends==1&&gestures.changes>=3,"Mouse release loses value or automation gesture");
+        param->removeListener(&gestures);
+        fader->mouseDown(event(start,true));
+        fader->mouseDoubleClick(event(start,true));
+        fader->mouseUp(event(start,false));
+        require(fader->getValue()==0&&param->getValue()==1,"Mouse-up overwrites double-click reset to 0 dB");
+    }
+    std::cout<<"PASS both faders: cap grab without jump, three live mouse positions and host updates before release, paired gestures\n";
+}
+
 int captureEditor(juce::AudioProcessor& plugin,const juce::File& output,bool verifyAudio){
     auto check=[](bool ok,const char* text){if(!ok)throw std::runtime_error(text);};
     std::unique_ptr<juce::AudioProcessorEditor> editor(plugin.createEditor());
@@ -68,6 +109,8 @@ int main(int argc,char** argv){
     }
     std::unique_ptr<juce::AudioProcessorEditor> editor(processor->createEditor());
     editor->setVisible(true);
+    testFaderDrag(*processor,*editor);
+    parameter(*processor,"Sound 1 Volume")->setValueNotifyingHost(1);
     auto* fader=dynamic_cast<juce::Slider*>(findTitle(*editor,"Sound 1 Volume"));require(fader!=nullptr,"Vertical fader missing");
     auto* volume=parameter(*processor,"Sound 1 Volume");
     fader->keyPressed(juce::KeyPress(juce::KeyPress::downKey));

@@ -71,6 +71,29 @@ public:
 class Fader final:public juce::Slider {
 public:
     Fader(){setSliderStyle(juce::Slider::LinearVertical);setTextBoxStyle(juce::Slider::NoTextBox,false,0,0);setRange(Volume::muteDb,0,1);setDoubleClickReturnValue(true,0);setWantsKeyboardFocus(true);}
+    void mouseDown(const juce::MouseEvent& event)override {
+        if(!isEnabled()||!event.mods.isLeftButtonDown())return;
+        cancelDrag();
+        const float top=(float)faderInset,bottom=(float)getHeight()-faderInset;
+        const float capY=bottom-(float)valueToProportionOfLength(getValue())*(bottom-top);
+        const bool onCap=std::abs(event.position.y-capY)<=14
+            &&std::abs(event.position.x-(float)getWidth()/2)<=16;
+        grabOffset=onCap?event.position.y-capY:0;
+        dragGesture=std::make_unique<juce::Slider::ScopedDragNotification>(*this);
+        updateFromMouse(event.position.y);
+    }
+    void mouseDrag(const juce::MouseEvent& event)override {
+        if(dragGesture&&isEnabled())updateFromMouse(event.position.y);
+    }
+    void mouseUp(const juce::MouseEvent& event)override {
+        if(dragGesture&&isEnabled())updateFromMouse(event.position.y);
+        cancelDrag();
+    }
+    void mouseDoubleClick(const juce::MouseEvent& event)override {
+        cancelDrag();juce::Slider::mouseDoubleClick(event);
+    }
+    void cancelDrag(){dragGesture.reset();}
+    void enablementChanged()override{if(!isEnabled())cancelDrag();}
     void mouseWheelMove(const juce::MouseEvent&,const juce::MouseWheelDetails& w)override {
         float delta=w.deltaY!=0?w.deltaY:w.deltaX;if(w.isReversed)delta=-delta;
         if(delta!=0)setValue(getValue()+(delta>0?1:-1),juce::sendNotificationSync);
@@ -83,5 +106,16 @@ public:
         if(k==juce::KeyPress::endKey){setValue(0,juce::sendNotificationSync);return true;}
         return juce::Slider::keyPressed(key);
     }
+private:
+    float grabOffset=0;
+    std::unique_ptr<juce::Slider::ScopedDragNotification> dragGesture;
+    void updateFromMouse(float mouseY){
+        const float top=(float)faderInset,bottom=(float)getHeight()-faderInset;
+        if(bottom<=top)return;
+        const double proportion=juce::jlimit(0.0,1.0,(double)(bottom-(mouseY-grabOffset))/(double)(bottom-top));
+        // Update UI and the host synchronously for every whole-dB step, while held.
+        setValue(proportionOfLengthToValue(proportion),juce::sendNotificationSync);
+    }
+
 };
 }
