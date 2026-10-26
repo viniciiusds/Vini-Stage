@@ -1,0 +1,14 @@
+.DS_Store
+/build/
+/deps/
+/.build-tools/
+/bridge/target/
+*.vst3/
+*.app/
+*.zip
+*.npno
+*.NPNO
+*.wav
+*.a
+*.o
+.vscode/
