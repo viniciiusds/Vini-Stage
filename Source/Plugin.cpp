@@ -284,8 +284,10 @@ public:
     ~VolumePanel()override{setLookAndFeel(nullptr);}
     void paint(juce::Graphics& g)override{
         Hardware::lcd(g,readout.getBounds().toFloat());
-        g.setColour(juce::Colour(0xffe1e8e7));g.setFont(Hardware::font(26));
-        g.drawText(index==0?"A":"B",0,getHeight()-36,getWidth(),30,juce::Justification::centred);
+        g.setColour(juce::Colour(0xffe1e8e7));g.setFont(Hardware::font(22));
+        g.drawText(index==0?"A":"B",0,getHeight()-22,getWidth(),22,juce::Justification::centred);
+        g.setColour(juce::Colour(0xff8d9a9b).withAlpha(0.65f));
+        g.drawLine((float)readout.getX(),(float)getHeight()-26,(float)readout.getRight(),(float)getHeight()-26,1);
         // These LEDs show the stored fader setting, not the audio signal level.
         const int lit=juce::roundToInt((float)(volume.getValue()-Volume::muteDb)/(float)-Volume::muteDb*16.0f);
         const auto track=ledBounds.toFloat();
@@ -299,8 +301,8 @@ public:
     }
     void resized()override{
         const int left=(getWidth()-84)/2;
-        readout.setBounds(left,0,84,32);
-        volume.setBounds(left,54,52,getHeight()-98);
+        readout.setBounds(left,0,84,26);
+        volume.setBounds(left,48,52,getHeight()-80);
         ledBounds={volume.getRight()+10,volume.getY()+Hardware::faderInset,22,volume.getHeight()-2*Hardware::faderInset};
     }
 private:
