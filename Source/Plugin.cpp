@@ -310,12 +310,26 @@ private:
     void updateVolume(){int db=juce::roundToInt(volume.getValue());readout.setText(db==Volume::muteDb?juce::String::fromUTF8("−∞ dB"):juce::String(db)+" dB",juce::dontSendNotification);repaint();}
 };
 
+class PianoKeyboard final:public juce::MidiKeyboardComponent {
+public:
+    explicit PianoKeyboard(juce::MidiKeyboardState& state):MidiKeyboardComponent(state,horizontalKeyboard){
+        setTitle("88-key piano");setAvailableRange(21,108);setLowestVisibleKey(21);
+        setScrollButtonsVisible(false);setMidiChannelsToDisplay(0xffff);
+        setColour(whiteNoteColourId,juce::Colour(0xfff1f0e8));
+        setColour(blackNoteColourId,juce::Colour(0xff121617));
+        setColour(keyDownOverlayColourId,juce::Colour(0xfff38679));
+        setColour(mouseOverKeyOverlayColourId,juce::Colour(0x35f38679));
+        setColour(keySeparatorLineColourId,juce::Colour(0xff262b2c));
+    }
+    juce::String getWhiteNoteText(int)override{return {};}
+};
+
 class Editor final:public juce::AudioProcessorEditor,private juce::Timer {
 public:
-    explicit Editor(Player& p):AudioProcessorEditor(p),player(p),first(p,0),second(p,1),texture(Hardware::grain()){
-        setLookAndFeel(&look);addAndMakeVisible(first);addAndMakeVisible(second);
+    explicit Editor(Player& p):AudioProcessorEditor(p),player(p),first(p,0),second(p,1),keys(p.keyboard),texture(Hardware::grain()){
+        setLookAndFeel(&look);addAndMakeVisible(first);addAndMakeVisible(second);addAndMakeVisible(keys);
         for(int i=0;i<2;++i){
-            auto& row=rows[(size_t)i];addAndMakeVisible(row);row.setFont(Hardware::font(23));
+            auto& row=rows[(size_t)i];addAndMakeVisible(row);row.setFont(Hardware::font(20));
             row.setColour(juce::Label::textColourId,juce::Colour(0xffe8eeee));
             row.setJustificationType(juce::Justification::centredLeft);
             row.setTitle(i==0?"Sound A":"Sound B");
@@ -330,7 +344,7 @@ public:
                     });
             };
         }
-        setSize(1000,500);refresh();startTimerHz(10);
+        setSize(1000,445);refresh();startTimerHz(10);
     }
     ~Editor()override{setLookAndFeel(nullptr);}
     void paint(juce::Graphics& g)override{
@@ -338,27 +352,30 @@ public:
         g.setGradientFill(juce::ColourGradient(juce::Colour(0xffbd252a),r.getTopLeft(),juce::Colour(0xff79070e),r.getBottomRight(),false));g.fillRoundedRectangle(r,12);
         g.saveState();juce::Path clip;clip.addRoundedRectangle(r,12);g.reduceClipRegion(clip);g.setTiledImageFill(texture,0,0,1);g.fillRect(r);g.restoreState();
         g.setColour(juce::Colour(0xffed6a67).withAlpha(0.65f));g.drawRoundedRectangle(r.reduced(1),11,1);
-        g.setColour(juce::Colour(0xffe2e5e1));g.setFont(Hardware::font(40,true));g.drawText("Vini",58,7,88,46,juce::Justification::centredLeft);
-        g.setFont(juce::Font(juce::FontOptions(40).withStyle("Medium")));g.drawText("Stage",148,7,160,46,juce::Justification::centredLeft);
-        Hardware::screw(g,19,19);Hardware::screw(g,(float)getWidth()-19,19);Hardware::screw(g,19,(float)getHeight()-19);Hardware::screw(g,(float)getWidth()-19,(float)getHeight()-19);
-        auto panel=juce::Rectangle<float>(32,74,344,378);
+        g.setColour(juce::Colour(0xffe2e5e1));g.setFont(Hardware::font(26,true));g.drawText("vini",20,260,45,35,juce::Justification::centredLeft);
+        g.setFont(juce::Font(juce::FontOptions(26).withStyle("Medium")));g.drawText("stage",67,260,72,35,juce::Justification::centredLeft);
+        auto frame=keys.getBounds().toFloat().expanded(5);
+        g.setColour(juce::Colour(0xff020606));g.fillRoundedRectangle(frame,5);
+        g.setColour(juce::Colour(0xff525c5b));g.drawRoundedRectangle(frame,5,1);
+        auto panel=juce::Rectangle<float>(140,20,315,280);
         g.setColour(juce::Colour(0xffa1abab));g.fillRoundedRectangle(panel,8);
         panel=panel.reduced(2);g.setGradientFill(juce::ColourGradient(juce::Colour(0xff303b40),panel.getTopLeft(),juce::Colour(0xff1b252a),panel.getBottomRight(),false));g.fillRoundedRectangle(panel,7);
         g.saveState();g.reduceClipRegion(panel.toNearestInt());g.setTiledImageFill(texture,0,0,1);g.fillRect(panel);g.restoreState();
-        auto header=juce::Rectangle<float>(35,77,338,35);
+        auto header=juce::Rectangle<float>(143,23,309,35);
         g.setGradientFill(juce::ColourGradient(juce::Colour(0xffd8dcd9),header.getTopLeft(),juce::Colour(0xff9fa8a7),header.getBottomLeft(),false));g.fillRoundedRectangle(header,4);
         g.setColour(juce::Colour(0xff172126));g.setFont(Hardware::font(18));g.drawText("L E V E L S",header,juce::Justification::centred);
-        Hardware::lcd(g,{406,74,562,246});
-        g.setColour(juce::Colour(0xffe8eeee));g.setFont(Hardware::font(30,true));g.drawText("Sounds",448,111,470,38,juce::Justification::centredLeft);
-        g.setColour(juce::Colour(0xffbfc8c6));g.drawLine(448,162,929,162,1);
+        Hardware::lcd(g,{465,20,395,200});
+        g.setColour(juce::Colour(0xffe8eeee));g.setFont(Hardware::font(25,true));g.drawText("Sounds",490,50,340,34,juce::Justification::centredLeft);
+        g.setColour(juce::Colour(0xffbfc8c6));g.drawLine(490,95,835,95,1);
     }
     void resized()override{
-        first.setBounds(60,128,135,308);second.setBounds(218,128,135,308);
-        rows[0].setBounds(444,181,492,42);rows[1].setBounds(444,231,492,42);
-        buttons[0].setBounds(466,347,172,73);buttons[1].setBounds(738,347,172,73);
+        first.setBounds(163,70,124,222);second.setBounds(308,70,124,222);
+        rows[0].setBounds(486,113,350,34);rows[1].setBounds(486,155,350,34);
+        buttons[0].setBounds(506,240,120,44);buttons[1].setBounds(700,240,120,44);
+        keys.setBounds(22,322,956,92);keys.setKeyWidth(956.0f/52.0f);keys.setLowestVisibleKey(21);
     }
 private:
-    Player& player;Hardware::Look look;VolumePanel first,second;juce::Image texture;
+    Player& player;Hardware::Look look;VolumePanel first,second;PianoKeyboard keys;juce::Image texture;
     std::array<juce::Label,2> rows;std::array<juce::TextButton,2> buttons;
     std::unique_ptr<juce::FileChooser> chooser;
     void refresh(){

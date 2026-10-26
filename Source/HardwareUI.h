@@ -52,7 +52,7 @@ public:
     }
     void drawButtonText(juce::Graphics& g,juce::TextButton& button,bool,bool)override {
         if(button.getComponentID()=="power")return;
-        g.setColour(juce::Colour(0xffd8dfde).withAlpha(button.isEnabled()?1.0f:0.45f));g.setFont(font(22));g.drawText(button.getButtonText(),button.getLocalBounds().reduced(6),juce::Justification::centred);
+        g.setColour(juce::Colour(0xffd8dfde).withAlpha(button.isEnabled()?1.0f:0.45f));g.setFont(font(17));g.drawText(button.getButtonText(),button.getLocalBounds().reduced(6),juce::Justification::centred);
     }
     void drawLinearSlider(juce::Graphics& g,int x,int y,int width,int height,float sliderPos,float,float,juce::Slider::SliderStyle,juce::Slider&)override {
         float centre=(float)x+(float)width*0.5f,top=(float)y,bottom=(float)(y+height);

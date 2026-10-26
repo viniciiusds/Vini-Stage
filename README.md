@@ -2,7 +2,9 @@
 
 Instrumento **Vini Stage**: um VST3 simples para carregar arquivos Nord `.npno` diretamente no Ableton Live 11. Clique em **Select A** ou **Select B**, escolha um arquivo e toque por MIDI.
 
-![Visor Sounds único, painel cinza de volumes A/B e botões Select/Clear](docs/interface-0.4.1.png)
+![Editor compilado com 88 teclas, logo em minúsculas e painel sem parafusos](docs/interface-keyboard-preview.png)
+
+**Prévia de desenvolvimento aguardando aprovação:** teclado de 88 teclas (A0–C8), clicável e com destaque por MIDI, logo `vini stage` ao lado de Levels, sem parafusos, menor espaço superior e botões Select/Clear menores. A imagem é uma captura direta do editor compilado, com um acorde MIDI demonstrativo. O instalador publicado abaixo continua sendo o 0.4.1 anterior; nenhum novo `.pkg` foi gerado para esta prévia.
 
 ## Instalador Universal `.pkg`
 

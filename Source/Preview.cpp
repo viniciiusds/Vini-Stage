@@ -12,6 +12,45 @@ juce::Component* findTitle(juce::Component& parent,const juce::String& title){
 void require(bool condition,const char* text){if(!condition)throw std::runtime_error(text);}
 juce::AudioProcessorParameter* parameter(juce::AudioProcessor& p,const juce::String& name){for(auto* value:p.getParameters())if(value->getName(128)==name)return value;throw std::runtime_error("Parameter missing");}
 }
+namespace {
+juce::Component* findPiano(juce::Component& parent){
+    if(parent.getTitle()=="88-key piano")return &parent;
+    for(auto* child:parent.getChildren())if(auto* found=findPiano(*child))return found;
+    return nullptr;
+}
+int captureEditor(juce::AudioProcessor& plugin,const juce::File& output,bool verifyAudio){
+    auto check=[](bool ok,const char* text){if(!ok)throw std::runtime_error(text);};
+    std::unique_ptr<juce::AudioProcessorEditor> editor(plugin.createEditor());
+    check(editor!=nullptr,"Plugin editor missing");editor->setVisible(true);
+    auto* keys=dynamic_cast<juce::MidiKeyboardComponent*>(findPiano(*editor));
+    check(keys!=nullptr,"88-key piano missing from compiled plugin");
+    check(keys->getRangeStart()==21&&keys->getRangeEnd()==108,"Keyboard range is not A0-C8");
+    check(keys->getRectangleForKey(21).getX()>=-0.1f&&keys->getRectangleForKey(108).getRight()<=keys->getWidth()+0.1f,"88 keys do not fit");
+    juce::AudioBuffer<float> audio(2,256);juce::MidiBuffer midi;
+    auto render=[&](int blocks){float peak=0;for(int b=0;b<blocks;++b){plugin.processBlock(audio,midi);midi.clear();peak=std::max(peak,audio.getMagnitude(0,256));}return peak;};
+    for(int channel=1;channel<=16;++channel)midi.addEvent(juce::MidiMessage::allNotesOff(channel),0);
+    render(40);
+    auto point=keys->getRectangleForKey(60).getCentre().withY((float)keys->getHeight()-12);
+    auto sample=point.toInt();
+    auto unpressed=keys->createComponentSnapshot(keys->getLocalBounds()).getPixelAt(sample.x,sample.y);
+    midi.addEvent(juce::MidiMessage::noteOn(2,60,(juce::uint8)100),0);
+    check(render(4)>0||!verifyAudio,"MIDI keyboard test silent");
+    auto pressed=keys->createComponentSnapshot(keys->getLocalBounds()).getPixelAt(sample.x,sample.y);
+    check(pressed!=unpressed,"Incoming MIDI did not highlight key");
+    midi.addEvent(juce::MidiMessage::noteOff(2,60),0);render(40);
+    check(keys->createComponentSnapshot(keys->getLocalBounds()).getPixelAt(sample.x,sample.y)==unpressed,"Note-off did not clear highlight");
+    // Demonstration chord from incoming MIDI, using the same processing as a DAW.
+    for(int note:{60,64,67})midi.addEvent(juce::MidiMessage::noteOn(1,note,(juce::uint8)100),0);
+    render(4);
+    auto image=editor->createComponentSnapshot(editor->getLocalBounds(),true,2.0f);
+    auto stream=output.createOutputStream();check(stream!=nullptr,"Cannot create screenshot");
+    stream->setPosition(0);stream->truncate();check(juce::PNGImageFormat().writeImageToStream(image,*stream),"Cannot write screenshot");
+    std::cout<<"PASS compiled editor: 88 visible keys, incoming MIDI audio/highlights and note-off\n";
+    std::cout<<"Captured compiled plugin editor: "<<output.getFullPathName()<<"\n";
+    return 0;
+}
+}
+
 int main(int argc,char** argv){
     juce::ScopedJuceInitialiser_GUI init;
     if(argc<2)return 1;
@@ -93,10 +132,6 @@ int main(int argc,char** argv){
         std::cout<<"PASS actual Clear B button: empty display, Select label, persisted empty path, silence and A retained\n";
     }
     std::cout<<"PASS real editor fader: 1 dB keyboard steps, integer snapping, 0 dB cap and mute\n";
-    auto image=editor->createComponentSnapshot(editor->getLocalBounds(),true,2.0f);
-    juce::File file(argv[1]);auto stream=file.createOutputStream();
-    if(!stream)return 2;
-    stream->setPosition(0);stream->truncate();
-    if(!juce::PNGImageFormat().writeImageToStream(image,*stream))return 2;
-    std::cout<<"Rendered plugin UI: "<<file.getFullPathName()<<"\n";
+    editor.reset();processor->prepareToPlay(48000,256);
+    return captureEditor(*processor,juce::File(argv[1]),argc>=4);
 }
