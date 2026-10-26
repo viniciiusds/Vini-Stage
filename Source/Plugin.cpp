@@ -1,5 +1,7 @@
 #include <JuceHeader.h>
 #include "Bridge.h"
+#include "Volume.h"
+#include "HardwareUI.h"
 #include <array>
 #include <condition_variable>
 #include <mutex>
@@ -180,7 +182,7 @@ public:
     const juce::String getProgramName(int)override{return "Default";}
     void changeProgramName(int,const juce::String&)override{}
     bool isBusesLayoutSupported(const BusesLayout& l)const override{return l.getMainInputChannelSet().isDisabled()&&l.getMainOutputChannelSet()==juce::AudioChannelSet::stereo();}
-    void prepareToPlay(double r,int)override{for(int i=0;i<2;++i)layers[(size_t)i].prepare(r,enabled[(size_t)i]->load()>0.5f?volumes[(size_t)i]->load():0.0f);}
+    void prepareToPlay(double r,int)override{for(int i=0;i<2;++i)layers[(size_t)i].prepare(r,enabled[(size_t)i]->load()>0.5f?Volume::snap(volumes[(size_t)i]->load()):0.0f);}
     void reset()override{for(auto& l:layers)l.reset();}
     void releaseResources()override{reset();}
     juce::String status(int i){return layers[(size_t)i].status();}
@@ -188,20 +190,28 @@ public:
     void loadFile(int i,const juce::File& file){layers[(size_t)i].loadFile(file.getFullPathName());}
     void processBlock(juce::AudioBuffer<float>& audio,juce::MidiBuffer& midi)override{
         juce::ScopedNoDenormals guard;audio.clear();keyboard.processNextMidiBuffer(midi,0,audio.getNumSamples(),true);
-        for(int i=0;i<2;++i)layers[(size_t)i].process(audio,midi,enabled[(size_t)i]->load()>0.5f,volumes[(size_t)i]->load());
+        for(int i=0;i<2;++i)layers[(size_t)i].process(audio,midi,enabled[(size_t)i]->load()>0.5f,Volume::snap(volumes[(size_t)i]->load()));
         midi.clear();
     }
     bool hasEditor()const override{return true;}
     juce::AudioProcessorEditor* createEditor()override;
     void getStateInformation(juce::MemoryBlock& dest)override{
-        juce::XmlElement xml("NPnoPlayer");xml.setAttribute("version",2);
+        juce::XmlElement xml("NPnoPlayer");xml.setAttribute("version",3);
         xml.setAttribute("samplePath",layers[0].savedPath());
         for(int i=0;i<2;++i){auto* slot=xml.createNewChildElement("Slot");slot->setAttribute("index",i);slot->setAttribute("samplePath",layers[(size_t)i].savedPath());slot->setAttribute("ready",layers[(size_t)i].ready());slot->setAttribute("loading",layers[(size_t)i].busy());}
         xml.addChildElement(parameters.copyState().createXml().release());copyXmlToBinary(xml,dest);
     }
     void setStateInformation(const void* data,int bytes)override{
         auto xml=getXmlFromBinary(data,bytes);if(!xml||!xml->hasTagName("NPnoPlayer"))return;
-        if(auto* controls=xml->getChildByName("Controls"))parameters.replaceState(juce::ValueTree::fromXml(*controls));
+        if(auto* controls=xml->getChildByName("Controls")){
+            auto state=juce::ValueTree::fromXml(*controls);
+            // Keep the legacy linear-gain IDs and normalized automation mapping.
+            // Snap saved gain to the nearest whole dB when opening older projects.
+            for(auto child:state)for(int i=0;i<2;++i)
+                if(child.getProperty("id").toString()==volumeID(i))
+                    child.setProperty("value",Volume::snap((float)child.getProperty("value",1.0f)),nullptr);
+            parameters.replaceState(state);
+        }
         else for(int i=0;i<2;++i){parameters.getParameter(onID(i))->setValueNotifyingHost(1.0f);parameters.getParameter(volumeID(i))->setValueNotifyingHost(1.0f);}
         std::array<juce::String,2> paths{};paths[0]=xml->getStringAttribute("samplePath");
         for(auto* slot:xml->getChildIterator())if(slot->hasTagName("Slot")){int i=slot->getIntAttribute("index",-1);if(i>=0&&i<2)paths[(size_t)i]=slot->getStringAttribute("samplePath");}
@@ -214,53 +224,112 @@ private:
         juce::AudioProcessorValueTreeState::ParameterLayout layout;
         for(int i=0;i<2;++i){auto name="Sound "+juce::String(i+1);
             layout.add(std::make_unique<juce::AudioParameterBool>(juce::ParameterID(onID(i),1),name+" On",true));
-            layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(volumeID(i),1),name+" Volume",juce::NormalisableRange<float>(0,1),1.0f));}
+            auto range=juce::NormalisableRange<float>(0,1,
+                [](float,float,float value){return value;},
+                [](float,float,float value){return value;},
+                [](float,float,float value){return Volume::snap(value);});
+            auto attributes=juce::AudioParameterFloatAttributes()
+                .withStringFromValueFunction([](float value,int){int db=Volume::decibels(value);return db==Volume::muteDb?juce::String("-inf dB"):juce::String(db)+" dB";})
+                .withValueFromStringFunction([](const juce::String& text){return text.containsIgnoreCase("inf")||text.containsChar((juce::juce_wchar)0x221e)?0.0f:Volume::linear(juce::roundToInt(text.getFloatValue()));});
+            layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(volumeID(i),1),name+" Volume",range,1.0f,attributes));}
         return layout;
     }
 };
 
 class LayerPanel final:public juce::Component {
 public:
-    LayerPanel(Player& p,int number):player(p),index(number){
-        for(auto* c:std::array<juce::Component*,5>{&title,&select,&on,&name,&volume})addAndMakeVisible(c);
-        title.setText("Sound "+juce::String(index+1),juce::dontSendNotification);title.setFont(juce::Font(juce::FontOptions(18.0f)));
-        select.setButtonText("Select Sound");on.setButtonText("ON");on.setTooltip("Enable or mute this sound");
-        volume.setSliderStyle(juce::Slider::LinearHorizontal);volume.setTextBoxStyle(juce::Slider::TextBoxRight,false,55,24);
-        volume.setTooltip("Volume of Sound "+juce::String(index+1));volume.setTitle("Sound "+juce::String(index+1)+" Volume");volume.setDoubleClickReturnValue(true,1.0);
-        name.setJustificationType(juce::Justification::centredLeft);
+    LayerPanel(Player& p,int number):player(p),index(number),texture(Hardware::grain()){
+        setLookAndFeel(&look);
+        for(auto* c:std::array<juce::Component*,5>{&select,&on,&name,&volume,&readout})addAndMakeVisible(c);
+        select.setButtonText("SELECT SOUND");
+        on.setComponentID("power");on.setClickingTogglesState(true);on.setTitle("Sound "+juce::String(index+1)+" ON/OFF");on.setTooltip("Enable or mute this sound");
+        name.setJustificationType(juce::Justification::centred);name.setFont(Hardware::font(15));name.setColour(juce::Label::textColourId,juce::Colour(0xffadffd0));
+        readout.setJustificationType(juce::Justification::centred);readout.setFont(Hardware::font(17));readout.setColour(juce::Label::textColourId,juce::Colour(0xffadffd0));
+        readout.setEditable(true,true,false);readout.setTitle("Volume in dB");readout.setTooltip("Type a volume from -60 to 0 dB; -inf mutes");
+        volume.setTitle("Sound "+juce::String(index+1)+" Volume");volume.setTooltip("1 dB steps; maximum 0 dB; bottom mutes");
         toggleAttachment=std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(player.parameters,Player::onID(index),on);
-        volumeAttachment=std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(player.parameters,Player::volumeID(index),volume);
-        // Attachment installs the parameter's formatter; replace it afterwards
-        // so this fader displays percentages rather than the raw 0..1 value.
-        volume.textFromValueFunction=[](double v){return juce::String(juce::roundToInt(v*100))+"%";};
-        volume.valueFromTextFunction=[](const juce::String& s){return s.getDoubleValue()/100.0;};
-        volume.updateText();
+        volumeAttachment=std::make_unique<juce::ParameterAttachment>(*player.parameters.getParameter(Player::volumeID(index)),[this](float gain){volume.setValue(Volume::decibels(gain),juce::dontSendNotification);updateVolume();});
+        volume.onValueChange=[this]{
+            float gain=Volume::linear(juce::roundToInt(volume.getValue()));
+            if(dragging)volumeAttachment->setValueAsPartOfGesture(gain);else volumeAttachment->setValueAsCompleteGesture(gain);
+            updateVolume();
+        };
+        volume.onDragStart=[this]{dragging=true;volumeAttachment->beginGesture();};
+        volume.onDragEnd=[this]{volumeAttachment->endGesture();dragging=false;};
+        readout.onTextChange=[this]{
+            auto text=readout.getText();int db=text.containsIgnoreCase("inf")||text.containsChar((juce::juce_wchar)0x221e)?Volume::muteDb:juce::roundToInt(text.getFloatValue());
+            volume.setValue(juce::jlimit(Volume::muteDb,0,db),juce::sendNotificationSync);updateVolume();
+        };
+        volumeAttachment->sendInitialUpdate();
         select.onClick=[this]{
             chooser=std::make_unique<juce::FileChooser>("Select Nord piano — Sound "+juce::String(index+1),juce::File{},"*.npno",true);
             chooser->launchAsync(juce::FileBrowserComponent::openMode|juce::FileBrowserComponent::canSelectFiles,
                 [safe=juce::Component::SafePointer<LayerPanel>(this)](const juce::FileChooser& c){if(safe&&c.getResult().existsAsFile())safe->player.loadFile(safe->index,c.getResult());});
         };refresh();
     }
-    void refresh(){name.setText(player.status(index),juce::dontSendNotification);select.setEnabled(!player.busy(index));on.setButtonText(on.getToggleState()?"ON":"OFF");}
-    void paint(juce::Graphics& g)override{g.setColour(juce::Colour(0xff2b3038));g.fillRoundedRectangle(getLocalBounds().toFloat(),8);g.setColour(juce::Colour(0xffa7acb5));g.setFont(13);g.drawText("Volume",16,110,70,24,juce::Justification::centredLeft);}
-    void resized()override{title.setBounds(14,10,180,28);on.setBounds(getWidth()-80,10,68,28);select.setBounds(16,47,130,30);name.setBounds(12,80,getWidth()-24,24);volume.setBounds(72,110,getWidth()-86,26);}
+    ~LayerPanel()override{setLookAndFeel(nullptr);}
+    void refresh(){
+        auto text=player.status(index);if(text=="Select a Nord .npno sound")text="No sound selected";
+        name.setText(text,juce::dontSendNotification);name.setTooltip(player.status(index));select.setEnabled(!player.busy(index));
+        bool enabled=on.getToggleState();if(enabled!=lastOn){lastOn=enabled;repaint();}
+        updateVolume();
+    }
+    void paint(juce::Graphics& g)override{
+        auto bounds=getLocalBounds().toFloat().reduced(1);
+        g.setColour(juce::Colour(0xff050909));g.fillRoundedRectangle(bounds,9);
+        g.setColour(juce::Colour(0xffa9b5b5));g.drawRoundedRectangle(bounds.reduced(1),8,1.5f);
+        auto panel=bounds.reduced(5);
+        g.setGradientFill(juce::ColourGradient(juce::Colour(0xff263b40),panel.getTopLeft(),juce::Colour(0xff182429),panel.getBottomRight(),false));g.fillRoundedRectangle(panel,6);
+        g.saveState();g.reduceClipRegion(panel.toNearestInt());g.setTiledImageFill(texture,0,0,1);g.fillRect(panel);g.restoreState();
+        auto header=juce::Rectangle<float>(8,8,(float)getWidth()-16,33);
+        g.setGradientFill(juce::ColourGradient(juce::Colour(0xffd8dcd9),header.getTopLeft(),juce::Colour(0xff9fa8a7),header.getBottomLeft(),false));g.fillRoundedRectangle(header,3);
+        g.setColour(juce::Colour(0xff172126));g.setFont(Hardware::font(18,true));g.drawText("SOUND "+juce::String(index+1),22,10,200,29,juce::Justification::centredLeft);
+        Hardware::lcd(g,name.getBounds().toFloat());Hardware::lcd(g,readout.getBounds().toFloat());
+        g.setColour(juce::Colour(0xffdfe6e5));g.setFont(Hardware::font(12,true));g.drawText("VOLUME",readout.getX()-5,43,readout.getWidth()+10,18,juce::Justification::centred);
+        Hardware::led(g,{78.0f,222.0f},on.getToggleState());
+        g.setColour(juce::Colour(0xffe1e8e7));g.setFont(Hardware::font(12,true));g.drawText(on.getToggleState()?"ON":"OFF",58,239,40,20,juce::Justification::centred);
+        // These LEDs show the stored fader setting, not the audio signal level.
+        const int lit=juce::roundToInt((float)(volume.getValue()-Volume::muteDb)/(float)-Volume::muteDb*16.0f);
+        float x=(float)getWidth()-75,y=99;
+        g.setColour(juce::Colour(0xff040a09));g.fillRoundedRectangle(x-3,y-4,19,160,2);
+        for(int i=0;i<16;++i){float at=y+(float)(15-i)*9.5f;juce::Rectangle<float> cell(x,at,13,7);
+            if(i<lit){g.setColour(juce::Colour(0xff3dff0b).withAlpha(0.13f));g.fillRoundedRectangle(cell.expanded(2),2);g.setGradientFill(juce::ColourGradient(juce::Colour(0xff9dff3d),cell.getTopLeft(),juce::Colour(0xff19d90a),cell.getBottomLeft(),false));}
+            else g.setColour(juce::Colour(0xff374649));g.fillRoundedRectangle(cell,1);
+        }
+    }
+    void resized()override{
+        name.setBounds(38,78,190,42);select.setBounds(60,136,150,33);on.setBounds(112,202,48,49);
+        readout.setBounds(getWidth()-163,61,85,25);volume.setBounds(getWidth()-155,89,46,170);
+    }
 private:
-    Player& player;int index;
-    juce::Label title,name;juce::TextButton select;juce::ToggleButton on;juce::Slider volume;
+    Player& player;int index;bool dragging=false,lastOn=true;
+    Hardware::Look look;juce::Image texture;
+    juce::Label name,readout;juce::TextButton select,on;Hardware::Fader volume;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> toggleAttachment;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> volumeAttachment;
+    std::unique_ptr<juce::ParameterAttachment> volumeAttachment;
     std::unique_ptr<juce::FileChooser> chooser;
+    void updateVolume(){int db=juce::roundToInt(volume.getValue());readout.setText(db==Volume::muteDb?juce::String::fromUTF8("−∞ dB"):juce::String(db)+" dB",juce::dontSendNotification);repaint();}
 };
 
 class Editor final:public juce::AudioProcessorEditor,private juce::Timer {
 public:
-    explicit Editor(Player& p):AudioProcessorEditor(p),first(p,0),second(p,1),keys(p.keyboard,juce::MidiKeyboardComponent::horizontalKeyboard){
-        addAndMakeVisible(first);addAndMakeVisible(second);addAndMakeVisible(keys);keys.setAvailableRange(21,108);keys.setLowestVisibleKey(48);setSize(760,286);startTimerHz(10);
+    explicit Editor(Player& p):AudioProcessorEditor(p),first(p,0),second(p,1),keys(p.keyboard,juce::MidiKeyboardComponent::horizontalKeyboard),texture(Hardware::grain()){
+        addAndMakeVisible(first);addAndMakeVisible(second);addAndMakeVisible(keys);
+        keys.setAvailableRange(21,108);keys.setLowestVisibleKey(21);keys.setKeyWidth(17);
+        setSize(1000,500);startTimerHz(10);
     }
-    void paint(juce::Graphics& g)override{g.fillAll(juce::Colour(0xff202329));g.setColour(juce::Colours::white);g.setFont(23);g.drawText("Vini Stage",20,8,getWidth()-40,32,juce::Justification::centred);}
-    void resized()override{first.setBounds(16,48,356,150);second.setBounds(388,48,356,150);keys.setBounds(16,216,getWidth()-32,54);}
+    void paint(juce::Graphics& g)override{
+        g.fillAll(juce::Colour(0xff111514));auto r=getLocalBounds().toFloat().reduced(4);
+        g.setGradientFill(juce::ColourGradient(juce::Colour(0xffbd252a),r.getTopLeft(),juce::Colour(0xff79070e),r.getBottomRight(),false));g.fillRoundedRectangle(r,12);
+        g.saveState();juce::Path clip;clip.addRoundedRectangle(r,12);g.reduceClipRegion(clip);g.setTiledImageFill(texture,0,0,1);g.fillRect(r);g.restoreState();
+        g.setColour(juce::Colour(0xffed6a67).withAlpha(0.65f));g.drawRoundedRectangle(r.reduced(1),11,1);
+        g.setColour(juce::Colour(0xffe2e5e1));g.setFont(Hardware::font(40,true));g.drawText("Vini Stage",64,12,400,46,juce::Justification::centredLeft);
+        Hardware::screw(g,19,19);Hardware::screw(g,(float)getWidth()-19,19);Hardware::screw(g,19,(float)getHeight()-19);Hardware::screw(g,(float)getWidth()-19,(float)getHeight()-19);
+        auto kb=keys.getBounds().toFloat().expanded(5);g.setColour(juce::Colour(0xff32040a));g.fillRoundedRectangle(kb,4);g.setColour(juce::Colours::black);g.drawRoundedRectangle(kb,4,2);
+    }
+    void resized()override{first.setBounds(44,70,438,270);second.setBounds(518,70,438,270);keys.setBounds(44,366,912,110);}
 private:
-    LayerPanel first,second;juce::MidiKeyboardComponent keys;
+    LayerPanel first,second;juce::MidiKeyboardComponent keys;juce::Image texture;
     void timerCallback()override{first.refresh();second.refresh();}
 };
 juce::AudioProcessorEditor* Player::createEditor(){return new Editor(*this);}

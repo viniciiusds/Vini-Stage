@@ -76,16 +76,43 @@ int testLayers(juce::AudioPluginFormatManager& manager,const juce::PluginDescrip
         controls(*plugin,false,true);auto b=render(*plugin);require(energy(b)>1e-6,"Sound 2 silent");
         controls(*plugin,true,true);compare(render(*plugin),a,b,1,1);
         std::cout<<"PASS independent sounds and simultaneous sum\n";
-        controls(*plugin,true,true,0.25f,0.65f);compare(render(*plugin),a,b,0.25f,0.65f);
-        std::cout<<"PASS independent horizontal volume parameters\n";
-        controls(*plugin,false,true,0.25f,0.65f);auto before=render(*plugin);compare(before,a,b,0,0.65f);
+        const float firstGain=std::pow(10.0f,-12.0f/20.0f),secondGain=std::pow(10.0f,-4.0f/20.0f);
+        controls(*plugin,true,true,0.25f,0.65f);compare(render(*plugin),a,b,firstGain,secondGain);
+        std::cout<<"PASS independent quantized dB volume parameters\n";
+        auto* volume=parameter(*plugin,"Sound 1 Volume");
+        controls(*plugin,true,false);
+        float previous=0;
+        for(int db=-60;db<=0;++db){
+            volume->setValueNotifyingHost(volume->getValueForText(juce::String(db)+" dB"));
+            float expected=std::pow(10.0f,(float)db/20.0f);
+            require(std::abs(volume->getValue()-expected)<1e-6f,"dB step gain is incorrect");
+            require(volume->getValue()>previous,"Volume steps are not increasing");previous=volume->getValue();
+            if(db==-60||db==-12||db==-6||db==-1||db==0)compare(render(*plugin),a,b,expected,0);
+        }
+        volume->setValueNotifyingHost(volume->getValueForText("+6 dB"));
+        require(volume->getValue()==1.0f,"Volume exceeds 0 dB");
+        volume->setValueNotifyingHost(volume->getValueForText("-inf dB"));
+        require(energy(render(*plugin))<1e-12,"Minus infinity is not silent");
+        std::cout<<"PASS 1 dB increments, measured attenuation, maximum 0 dB and minus-infinity mute\n";
+        // Import a 0.2.0 project whose volume properties are still linear gains.
+        auto legacy=snapshot(*plugin);legacy->setAttribute("version",2);
+        auto* legacyControls=legacy->getChildByName("Controls");require(legacyControls!=nullptr,"Controls missing");
+        for(auto* item:legacyControls->getChildIterator()){
+            if(item->getStringAttribute("id")=="layer1Volume")item->setAttribute("value",0.25);
+            if(item->getStringAttribute("id")=="layer2Volume")item->setAttribute("value",0.65);
+        }
+        restoreXml(*plugin,*legacy);waitFor(*plugin,paths);
+        require(std::abs(parameter(*plugin,"Sound 1 Volume")->getValue()-firstGain)<1e-6f&&std::abs(parameter(*plugin,"Sound 2 Volume")->getValue()-secondGain)<1e-6f,"Legacy linear volumes did not migrate to nearest dB");
+        std::cout<<"PASS old project volumes migrate to nearest whole dB\n";
+
+        controls(*plugin,false,true,0.25f,0.65f);auto before=render(*plugin);compare(before,a,b,0,secondGain);
         std::cout<<"PASS Sound 1 OFF leaves Sound 2 playing\n";
         // Save the real host state, destroy the instrument and reopen a fresh instance.
         juce::MemoryBlock saved;plugin->getStateInformation(saved);plugin->releaseResources();plugin.reset();
         plugin=make();plugin->setStateInformation(saved.getData(),(int)saved.getSize());waitFor(*plugin,paths);
         require(parameter(*plugin,"Sound 1 On")->getValue()<0.5f&&parameter(*plugin,"Sound 2 On")->getValue()>0.5f,"ON/OFF did not restore");
-        require(std::abs(parameter(*plugin,"Sound 1 Volume")->getValue()-0.25f)<1e-5f&&std::abs(parameter(*plugin,"Sound 2 Volume")->getValue()-0.65f)<1e-5f,"Volumes did not restore");
-        compare(render(*plugin),a,b,0,0.65f);
+        require(std::abs(parameter(*plugin,"Sound 1 Volume")->getValue()-firstGain)<1e-5f&&std::abs(parameter(*plugin,"Sound 2 Volume")->getValue()-secondGain)<1e-5f,"Volumes did not restore");
+        compare(render(*plugin),a,b,0,secondGain);
         std::cout<<"PASS fresh-instance project restore: both files, ON/OFF, volumes and matching audio\n";
         controls(*plugin,false,false);require(energy(render(*plugin))<1e-12,"Both sounds OFF not silent");
         std::cout<<"PASS both sounds OFF\n";

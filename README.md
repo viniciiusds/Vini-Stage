@@ -2,16 +2,18 @@
 
 Instrumento **Vini Stage**: um VST3 simples para carregar arquivos Nord `.npno` diretamente no Ableton Live 11. Clique em **Select Sound**, escolha um arquivo e toque por MIDI.
 
-![Duas seções com seleção de timbre, ON/OFF e volume independente](docs/interface.png)
+![Layout vermelho com duas seções, faders verticais, LEDs e volume em dB](docs/interface.png)
 
-## Recursos atuais — 0.2.0
+## Recursos atuais — 0.3.0
 
 - Carregamento de `.npno` em segundo plano, sem conversão manual para WAV.
 - Mapeamento de teclas, transposição, ajuste fino e camadas de velocity.
-- Duas seções opcionais e independentes: Select Sound, ON/OFF e fader horizontal de volume em cada uma.
+- Duas seções opcionais e independentes: Select Sound, ON/OFF e fader vertical de volume em cada uma.
+- Painel vermelho, seções cinza, LEDs de ON/OFF e barras verdes que acompanham a posição dos faders.
+- Volume de −60 a 0 dB em passos de 1 dB, com posição adicional de silêncio (−∞). Visores em dB editáveis; máximo de 0 dB.
 - Samples mono/estéreo, 128 vozes por seção e sustain CC64.
 - Volumes e ON/OFF são parâmetros disponíveis para automação no host, com transições suavizadas.
-- Os dois caminhos de timbre, os volumes e ON/OFF são salvos no estado do plugin. Projetos antigos com um único timbre abrem na seção Sound 1.
+- Os dois caminhos de timbre, os volumes e ON/OFF são salvos no estado do plugin. Volumes de projetos anteriores são arredondados para o dB inteiro mais próximo, preservando os IDs dos parâmetros. Projetos antigos com um único timbre abrem na seção Sound 1.
 - Note-off com fade suave, sem disparar o sample extra de release que causava ruído no grand piano.
 - VST3 e aplicativo standalone para macOS, com interface mínima e teclado visual.
 
@@ -56,6 +58,8 @@ build/NpnoSmoke_artefacts/Release/NpnoSmoke \
   "/caminho/para/segundo-piano.npno"
 ```
 
+O teste verifica também os passos de 1 dB, a atenuação medida no áudio, o teto de 0 dB, o mute em −∞ e a migração dos volumes de projetos antigos.
+
 O segundo arquivo é opcional no comando de teste. Quando informado, o teste também verifica soma dos timbres, volumes independentes, ON/OFF, uso apenas da seção 2, arquivo ausente e salvamento/reabertura em uma nova instância.
 
 O teste de 88 teclas pressupõe um arquivo que cubra MIDI 21–108. Bibliotecas com outra extensão de teclado podem ter notas descobertas legítimas.
@@ -82,3 +86,14 @@ Este projeto é disponibilizado sob AGPL-3.0; veja `LICENSE`. JUCE tem licenciam
 
 - JUCE: https://github.com/juce-framework/JUCE
 - nord-format: https://docs.rs/nord-format/0.8.0/nord_format/
+
+## Renderizar a interface real
+
+```bash
+cmake --build build --target NpnoPreview --config Release -j 4
+build/NpnoPreview_artefacts/Release/NpnoPreview "$PWD/interface.png" \
+  "/caminho/para/grand.npno" \
+  "/caminho/para/clavinet.npno"
+```
+
+Os dois arquivos são opcionais na prévia. A ferramenta testa os controles do editor e renderiza o layout real, com níveis demonstrativos de −3 dB e −8 dB e a segunda seção desligada. A imagem no início deste README vem desse editor, não de um mockup.

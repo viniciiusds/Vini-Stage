@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "")
-project(NpnoPlayer VERSION 0.2.0 LANGUAGES C CXX)
+project(NpnoPlayer VERSION 0.3.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 if(NOT DEFINED JUCE_PATH)
     message(FATAL_ERROR "Configure -DJUCE_PATH=/path/to/JUCE")
@@ -28,7 +28,7 @@ juce_add_plugin(NpnoPlayer
     IS_MIDI_EFFECT FALSE COPY_PLUGIN_AFTER_BUILD FALSE
     VST3_CATEGORIES Instrument Sampler)
 juce_generate_juce_header(NpnoPlayer)
-target_sources(NpnoPlayer PRIVATE Source/Plugin.cpp Source/Bridge.h)
+target_sources(NpnoPlayer PRIVATE Source/Plugin.cpp Source/Bridge.h Source/Volume.h Source/HardwareUI.h)
 target_compile_definitions(NpnoPlayer PUBLIC JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_VST3_CAN_REPLACE_VST2=0)
 target_link_libraries(NpnoPlayer PRIVATE npno_bridge juce::juce_audio_utils juce::juce_recommended_config_flags)
 juce_add_console_app(NpnoSmoke PRODUCT_NAME "NPno Smoke")

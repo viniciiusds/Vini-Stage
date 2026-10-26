@@ -1,4 +1,4 @@
-# Vini Stage 0.2.0 — versão de teste
+# Vini Stage 0.3.0 — versão de teste
 
 Instrumento VST3 com botão **Select Sound** para abrir um arquivo `.npno` diretamente. Os samples são decodificados em memória; não é necessário converter ou importar WAVs.
 
@@ -9,8 +9,9 @@ Instrumento VST3 com botão **Select Sound** para abrir um arquivo `.npno` diret
 3. No Live 11, abra Preferences → Plug-Ins e habilite **Use VST3 Plug-In System Folders**. Use **Rescan** se necessário.
 4. Em Plug-Ins → VST3 → Vinizera, coloque **Vini Stage** em uma pista MIDI.
 5. Em **Sound 1** ou **Sound 2**, clique em **Select Sound**, escolha seu `.npno` e aguarde o nome aparecer. Basta carregar uma das seções; a segunda é opcional.
-6. Cada seção tem seu próprio botão **ON/OFF** e um fader horizontal **Volume** (0–100%). Os dois timbres recebem o mesmo MIDI e são somados na saída estéreo. Se a soma ficar alta, reduza os volumes.
-7. Toque pelo teclado MIDI ou use o teclado visual. CC64 controla o sustain.
+6. Cada seção tem seu próprio botão **ON/OFF** e um fader vertical **Volume** em passos de **1 dB**, de **−60 dB a 0 dB**, com uma posição adicional **−∞ dB** que silencia o timbre. Os dois timbres recebem o mesmo MIDI e são somados na saída estéreo. Se a soma ficar alta, reduza os volumes.
+7. O visor acima do fader mostra o valor em dB e permite digitá-lo. As setas e cada passo da roda do mouse alteram 1 dB; duplo clique no fader retorna a 0 dB. Os LEDs verdes indicam a posição do fader; o LED vermelho mostra se a seção está ON ou OFF.
+8. Toque pelo teclado MIDI ou use o teclado visual. CC64 controla o sustain.
 
 Os caminhos dos dois `.npno`, os volumes e ON/OFF são guardados no projeto do Ableton. Ao reabrir, o plugin recarrega os timbres automaticamente. Cada arquivo `.npno` precisa permanecer no mesmo caminho para reabrir o projeto com o timbre. Se mudar o arquivo de lugar ou trocar de computador, selecione-o novamente. O plugin salva a referência ao arquivo; não inclui os samples no projeto.
 
@@ -49,3 +50,7 @@ Desativado o disparo de samples de release em cada note-off, que causava uma res
 ## Versão 0.2.0
 
 Duas seções independentes e opcionais com seleção de arquivo, ON/OFF e volume horizontal. Desligar uma seção faz um fade curto sem afetar a outra; religar exige uma nova nota e não recupera notas antigas. O estado de ambas é salvo, inclusive se um arquivo ainda está carregando. Projetos antigos com um arquivo continuam abrindo na seção Sound 1.
+
+## Versão 0.3.0
+
+Novo painel vermelho e cinza conforme o layout aprovado, quatro parafusos externos e nenhum interno. Faders verticais em passos de 1 dB, LEDs e visores numéricos. O máximo é 0 dB (ganho unitário), o menor nível audível é −60 dB e a posição inferior é −∞ (mute). A soma de dois timbres pode exigir reduzir seus volumes. Os níveis de projetos antigos são convertidos para o dB inteiro mais próximo; os caminhos, ON/OFF e os IDs de automação foram preservados.
