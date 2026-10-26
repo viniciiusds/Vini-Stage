@@ -2,11 +2,11 @@
 
 Instrumento **Vini Stage**: um VST3 simples para carregar arquivos Nord `.npno` diretamente no Ableton Live 11. Clique em **Select A** ou **Select B**, escolha um arquivo e toque por MIDI.
 
-![Visor Sounds único, painel cinza de volumes A/B e botões Select/Clear](docs/interface-0.4.0.png)
+![Visor Sounds único, painel cinza de volumes A/B e botões Select/Clear](docs/interface-0.4.1.png)
 
 ## Instalador Universal `.pkg`
 
-**[Baixar Vini Stage 0.4.0 Universal.pkg](https://github.com/viniciiusds/Vini-Stage/releases/download/v0.4.0/Vini-Stage-0.4.0-Universal.pkg)** · [Todas as versões](https://github.com/viniciiusds/Vini-Stage/releases)
+**[Baixar Vini Stage 0.4.1 Universal.pkg](https://github.com/viniciiusds/Vini-Stage/releases/download/v0.4.1/Vini-Stage-0.4.1-Universal.pkg)** · [Todas as versões](https://github.com/viniciiusds/Vini-Stage/releases)
 
 O instalador contém o mesmo VST3 Universal para **Intel/High Sierra 10.13** e **Apple Silicon/M4**. Feche o Live, abra o `.pkg`, siga o assistente e informe a senha de administrador. Ele instala para todos os usuários em `/Library/Audio/Plug-Ins/VST3/Vini Stage.vst3`.
 
@@ -18,12 +18,12 @@ O pacote atual é de teste, **sem assinatura Developer ID Installer e sem notari
 
 ```bash
 bash package.sh
-python3 packaging/test_package.py dist/Vini-Stage-0.4.0-Universal.pkg
+python3 packaging/test_package.py dist/Vini-Stage-0.4.1-Universal.pkg
 ```
 
 O nome e a versão do `.pkg` são obtidos do VST3 compilado. Para assinar o pacote, defina `INSTALLER_SIGN_IDENTITY` com a identidade de um certificado **Developer ID Installer** disponível no chaveiro. Isso não faz a notarização automaticamente; o plugin e o pacote de distribuição ainda precisam do fluxo de assinatura e notarização apropriado.
 
-## Recursos atuais — 0.4.0
+## Recursos atuais — 0.4.1
 
 - Carregamento de `.npno` em segundo plano, com **Loading... X%** no visor e sem conversão manual para WAV. O percentual acompanha a leitura do arquivo e a decodificação das gravações.
 - Mapeamento de teclas, transposição, ajuste fino e camadas de velocity.

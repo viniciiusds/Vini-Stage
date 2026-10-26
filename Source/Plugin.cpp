@@ -341,11 +341,11 @@ public:
         g.setColour(juce::Colour(0xffe2e5e1));g.setFont(Hardware::font(40,true));g.drawText("Vini",58,7,88,46,juce::Justification::centredLeft);
         g.setFont(juce::Font(juce::FontOptions(40).withStyle("Medium")));g.drawText("Stage",148,7,160,46,juce::Justification::centredLeft);
         Hardware::screw(g,19,19);Hardware::screw(g,(float)getWidth()-19,19);Hardware::screw(g,19,(float)getHeight()-19);Hardware::screw(g,(float)getWidth()-19,(float)getHeight()-19);
-        auto panel=juce::Rectangle<float>(32,60,344,392);
+        auto panel=juce::Rectangle<float>(32,74,344,378);
         g.setColour(juce::Colour(0xffa1abab));g.fillRoundedRectangle(panel,8);
         panel=panel.reduced(2);g.setGradientFill(juce::ColourGradient(juce::Colour(0xff303b40),panel.getTopLeft(),juce::Colour(0xff1b252a),panel.getBottomRight(),false));g.fillRoundedRectangle(panel,7);
         g.saveState();g.reduceClipRegion(panel.toNearestInt());g.setTiledImageFill(texture,0,0,1);g.fillRect(panel);g.restoreState();
-        auto header=juce::Rectangle<float>(35,63,338,35);
+        auto header=juce::Rectangle<float>(35,77,338,35);
         g.setGradientFill(juce::ColourGradient(juce::Colour(0xffd8dcd9),header.getTopLeft(),juce::Colour(0xff9fa8a7),header.getBottomLeft(),false));g.fillRoundedRectangle(header,4);
         g.setColour(juce::Colour(0xff172126));g.setFont(Hardware::font(18));g.drawText("L E V E L S",header,juce::Justification::centred);
         Hardware::lcd(g,{406,74,562,246});
@@ -353,7 +353,7 @@ public:
         g.setColour(juce::Colour(0xffbfc8c6));g.drawLine(448,162,929,162,1);
     }
     void resized()override{
-        first.setBounds(60,114,135,322);second.setBounds(218,114,135,322);
+        first.setBounds(60,128,135,308);second.setBounds(218,128,135,308);
         rows[0].setBounds(444,181,492,42);rows[1].setBounds(444,231,492,42);
         buttons[0].setBounds(466,347,172,73);buttons[1].setBounds(738,347,172,73);
     }

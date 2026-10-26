@@ -1,4 +1,4 @@
-# Vini Stage 0.4.0 — versão de teste
+# Vini Stage 0.4.1 — versão de teste
 
 Instrumento VST3 com botões **Select A** e **Select B** para abrir um arquivo `.npno` diretamente. Os samples são decodificados em memória; não é necessário converter ou importar WAVs.
 
@@ -77,3 +77,7 @@ Conjunto fader + LEDs reduzido um pouco na altura, mantendo o alinhamento e a ba
 ## Versão 0.4.0
 
 Visor Sounds único com linhas A/B, painel cinza de volumes à esquerda e LEDs à direita dos faders. Logotipo com Vini mais espesso que Stage. Select/Clear no mesmo botão, cancelamento de carregamento e remoção independente; espaços vazios persistem no projeto. Sem botões ON/OFF nem teclado visual. Mantidos os IDs de parâmetros e o estado legado.
+
+## Versão 0.4.1
+
+Topo do painel Levels alinhado ao topo do visor Sounds. Painel e faders 14 px mais curtos, mantendo a base e a margem entre os visores em dB e as alças.
