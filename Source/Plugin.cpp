@@ -302,7 +302,9 @@ public:
     void resized()override{
         const int left=(getWidth()-84)/2;
         readout.setBounds(left,0,84,26);
-        volume.setBounds(left,48,52,getHeight()-80);
+        // Equal 20 px gaps: LCD bottom -> LED top, and LED bottom -> separator.
+        // Keep the lower end fixed and extend the track upward.
+        volume.setBounds(left,32,52,getHeight()-64);
         ledBounds={volume.getRight()+10,volume.getY()+Hardware::faderInset,22,volume.getHeight()-2*Hardware::faderInset};
     }
 private:

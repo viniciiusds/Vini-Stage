@@ -12,7 +12,7 @@
 - Preserve the approved red/charcoal hardware layout, no manufacturer text in the header, no screws; lowercase vini stage logo beside the left of Levels near the keys, small Select/Clear buttons and reduced top padding. README imagery must be rendered from the actual current editor, not the concept image.
 
 - Display actual file-read/decode progress as Loading... X% in the corresponding A/B row of the shared Sounds LCD. Do not replace it with timer-driven progress. Align the Select/Clear buttons under the shared LCD and the LED column with the fader track; keep the dB LCD as wide as the fader/LED group and no visible Volume heading.
-- Keep at least 20 px of clear space between the bottom of the dB LCD and the fader cap at maximum (0 dB); keep the LED column aligned to the shortened fader track.
+- Latest approved fader direction supersedes the earlier 20 px cap clearance: extend tracks upward with their lower ends fixed. Keep equal 20 px gaps from dB LCD bottom to LED top and from LED bottom to the A/B separator. The cap at its extremes has 6 px clearance from the LCD/separator. Keep LED columns aligned to the fader tracks.
 
 - `package.sh` produces a legacy-compressed Universal PKG targeting macOS 10.13+, installing globally in `/Library/Audio/Plug-Ins/VST3/`. Keep its stable package identifier, non-relocatable/version-checked atomic bundle upgrade and safe per-user backup migration. Do not claim Developer ID signing, notarization or real High Sierra installation unless actually verified. Package tests must use isolated temporary roots and never run a real system installation without the user's explicit request.
 
