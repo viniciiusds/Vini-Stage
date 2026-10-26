@@ -1,6 +1,6 @@
-# Vini Stage 0.3.2 — versão de teste
+# Vini Stage 0.4.0 — versão de teste
 
-Instrumento VST3 com botão **Select Sound** para abrir um arquivo `.npno` diretamente. Os samples são decodificados em memória; não é necessário converter ou importar WAVs.
+Instrumento VST3 com botões **Select A** e **Select B** para abrir um arquivo `.npno` diretamente. Os samples são decodificados em memória; não é necessário converter ou importar WAVs.
 
 ## Instalar e tocar
 
@@ -18,11 +18,12 @@ Este pacote ainda não tem certificado Developer ID Installer nem notarização 
 2. Neste M4, as novas compilações já instalam o plugin automaticamente em `~/Library/Audio/Plug-Ins/VST3/`. Para instalar em outro Mac, copie **Vini Stage.vst3** para essa pasta ou execute `Instalar.command`.
 3. No Live 11, abra Preferences → Plug-Ins e habilite **Use VST3 Plug-In System Folders**. Use **Rescan** se necessário.
 4. Em Plug-Ins → VST3 → Vinizera, coloque **Vini Stage** em uma pista MIDI.
-5. Em **Sound 1** ou **Sound 2**, clique em **Select Sound**, escolha seu `.npno` e acompanhe **Loading... X%** no visor até o nome aparecer. Basta carregar uma das seções; a segunda é opcional.
-6. Cada seção tem seu próprio botão **ON/OFF** e um fader vertical **Volume** em passos de **1 dB**, de **−60 dB a 0 dB**, com uma posição adicional **−∞ dB** que silencia o timbre. Os dois timbres recebem o mesmo MIDI e são somados na saída estéreo. Se a soma ficar alta, reduza os volumes.
-7. O visor acima do fader mostra o valor em dB e permite digitá-lo. As setas e cada passo da roda do mouse alteram 1 dB; duplo clique no fader retorna a 0 dB. Os LEDs verdes indicam a posição do fader; o LED vermelho mostra se a seção está ON ou OFF.
-8. Toque pelo teclado MIDI ou use o teclado visual. CC64 controla o sustain.
+5. Clique em **Select A** ou **Select B**, escolha seu `.npno` e acompanhe **A: Loading... X%** ou **B: Loading... X%** no visor Sounds até aparecer o nome. Basta carregar um timbre; o outro é opcional.
+6. Após selecionar um arquivo, o botão muda para **Clear A/B**. Clique para remover aquele timbre, inclusive durante o carregamento: a linha fica **A:** ou **B:** e o botão volta a Select. Para trocar de timbre, use Clear e depois Select.
+7. Cada timbre tem um fader de **−60 a 0 dB**, em passos de **1 dB**, mais a posição **−∞ dB** para silêncio. O visor permite digitar o valor; setas e roda do mouse alteram 1 dB, duplo clique retorna a 0 dB. Os LEDs à direita indicam o volume configurado, mesmo quando o espaço está vazio; não são medidores de áudio.
+8. Toque pelo teclado MIDI. Ambos os timbres recebem o mesmo MIDI e são somados na saída estéreo; reduza os volumes se necessário. CC64 controla o sustain.
 
+Não há ON/OFF nem teclado visual neste layout. Os parâmetros ON/OFF anteriores são preservados no host para compatibilidade com projetos/automação: um estado antigo OFF permanece silencioso. Selecionar um novo arquivo reativa a camada.
 Os caminhos dos dois `.npno`, os volumes e ON/OFF são guardados no projeto do Ableton. Ao reabrir, o plugin recarrega os timbres automaticamente. Cada arquivo `.npno` precisa permanecer no mesmo caminho para reabrir o projeto com o timbre. Se mudar o arquivo de lugar ou trocar de computador, selecione-o novamente. O plugin salva a referência ao arquivo; não inclui os samples no projeto.
 
 ## Computadores
@@ -72,3 +73,7 @@ Progresso real de leitura e decodificação no visor do timbre (Loading... X%). 
 ## Versão 0.3.2
 
 Conjunto fader + LEDs reduzido um pouco na altura, mantendo o alinhamento e a base. A alça em 0 dB fica com margem de 20 px abaixo do visor. Sem alterações no volume, nos timbres ou no estado salvo dos projetos.
+
+## Versão 0.4.0
+
+Visor Sounds único com linhas A/B, painel cinza de volumes à esquerda e LEDs à direita dos faders. Logotipo com Vini mais espesso que Stage. Select/Clear no mesmo botão, cancelamento de carregamento e remoção independente; espaços vazios persistem no projeto. Sem botões ON/OFF nem teclado visual. Mantidos os IDs de parâmetros e o estado legado.

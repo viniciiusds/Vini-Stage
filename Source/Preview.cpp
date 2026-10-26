@@ -40,7 +40,58 @@ int main(int argc,char** argv){
     const bool unity=argc>4&&juce::String(argv[4])=="--unity";
     parameter(*processor,"Sound 1 Volume")->setValueNotifyingHost(volume->getValueForText(unity?"0 dB":"-3 dB"));
     auto* second=parameter(*processor,"Sound 2 Volume");second->setValueNotifyingHost(second->getValueForText(unity?"0 dB":"-8 dB"));
-    parameter(*processor,"Sound 2 On")->setValueNotifyingHost(0);
+    if(argc>=4){
+        auto* clear=dynamic_cast<juce::TextButton*>(findTitle(*editor,"Select or clear B"));
+        require(clear&&clear->getButtonText()=="Clear B","Loaded slot must offer Clear B");
+        processor->prepareToPlay(48000,256);
+        clear->onClick();
+        require(clear->getButtonText()=="Select B","Cleared slot must offer Select B");
+        auto* row=dynamic_cast<juce::Label*>(findTitle(*editor,"Sound B"));
+        require(row&&row->getText()=="B:","Cleared display must be empty");
+        auto* firstButton=dynamic_cast<juce::TextButton*>(findTitle(*editor,"Select or clear A"));
+        require(firstButton&&firstButton->getButtonText()=="Clear A","Clearing B changed A");
+        juce::MemoryBlock saved;processor->getStateInformation(saved);
+        auto xml=juce::AudioProcessor::getXmlFromBinary(saved.getData(),(int)saved.getSize());
+        for(auto* slot:xml->getChildIterator())if(slot->hasTagName("Slot")&&slot->getIntAttribute("index")==1)
+            require(slot->getStringAttribute("samplePath").isEmpty(),"Clear did not persist empty path");
+        // Isolate B using the preserved legacy automation parameter: it must be silent immediately.
+        parameter(*processor,"Sound 1 On")->setValueNotifyingHost(0);
+        juce::AudioBuffer<float> audio(2,256);juce::MidiBuffer midi;
+        midi.addEvent(juce::MidiMessage::noteOn(1,60,(juce::uint8)100),0);
+        processor->processBlock(audio,midi);
+        require(audio.getMagnitude(0,256)==0,"Cleared B still plays audio");
+        parameter(*processor,"Sound 1 On")->setValueNotifyingHost(1);
+        // A fresh instance restores the cleared path, including a save before the worker finishes clearing.
+        std::unique_ptr<juce::AudioProcessor> restored(createPluginFilter());
+        restored->setStateInformation(saved.getData(),(int)saved.getSize());
+        juce::MemoryBlock roundTrip;restored->getStateInformation(roundTrip);
+        auto restoredXml=juce::AudioProcessor::getXmlFromBinary(roundTrip.getData(),(int)roundTrip.getSize());
+        for(auto* slot:restoredXml->getChildIterator())if(slot->hasTagName("Slot"))
+            require(slot->getStringAttribute("samplePath")== (slot->getIntAttribute("index")==0?juce::File(argv[2]).getFullPathName():juce::String{}),"Cleared project did not restore A/B paths");
+        // Cancel a fresh asynchronous load through the actual UI; late decode must not resurrect B.
+        juce::XmlElement loading(*xml);
+        for(auto* slot:loading.getChildIterator())if(slot->hasTagName("Slot")&&slot->getIntAttribute("index")==1)
+            slot->setAttribute("samplePath",juce::File(argv[3]).getFullPathName());
+        juce::MemoryBlock loadingBytes;juce::AudioProcessor::copyXmlToBinary(loading,loadingBytes);
+        processor->setStateInformation(loadingBytes.getData(),(int)loadingBytes.getSize());
+        clear->onClick();
+        bool settled=false;
+        for(int n=0;n<1200;++n){
+            juce::MemoryBlock check;processor->getStateInformation(check);
+            auto state=juce::AudioProcessor::getXmlFromBinary(check.getData(),(int)check.getSize());
+            int idle=0;
+            for(auto* slot:state->getChildIterator())if(slot->hasTagName("Slot")){
+                if(!slot->getBoolAttribute("loading"))++idle;
+                if(slot->getIntAttribute("index")==1)require(slot->getStringAttribute("samplePath").isEmpty(),"Cancelled B resurrected");
+            }
+            if(idle==2){settled=true;break;}juce::Thread::sleep(50);
+        }
+        require(settled,"Clear while loading did not settle");
+        // Recreate so the snapshot contains the settled display rather than a timer's prior Loading label.
+        editor.reset(processor->createEditor());editor->setVisible(true);
+        std::cout<<"PASS fresh-instance cleared state and Clear during loading\n";
+        std::cout<<"PASS actual Clear B button: empty display, Select label, persisted empty path, silence and A retained\n";
+    }
     std::cout<<"PASS real editor fader: 1 dB keyboard steps, integer snapping, 0 dB cap and mute\n";
     auto image=editor->createComponentSnapshot(editor->getLocalBounds(),true,2.0f);
     juce::File file(argv[1]);auto stream=file.createOutputStream();

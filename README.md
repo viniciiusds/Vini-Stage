@@ -1,12 +1,12 @@
 # Vini Stage
 
-Instrumento **Vini Stage**: um VST3 simples para carregar arquivos Nord `.npno` diretamente no Ableton Live 11. Clique em **Select Sound**, escolha um arquivo e toque por MIDI.
+Instrumento **Vini Stage**: um VST3 simples para carregar arquivos Nord `.npno` diretamente no Ableton Live 11. Clique em **Select A** ou **Select B**, escolha um arquivo e toque por MIDI.
 
-![Layout vermelho com duas seções, faders verticais, LEDs e volume em dB](docs/interface-0.3.2.png)
+![Visor Sounds único, painel cinza de volumes A/B e botões Select/Clear](docs/interface-0.4.0.png)
 
 ## Instalador Universal `.pkg`
 
-**[Baixar Vini Stage 0.3.2 Universal.pkg](https://github.com/viniciiusds/Vini-Stage/releases/download/v0.3.2/Vini-Stage-0.3.2-Universal.pkg)** · [Todas as versões](https://github.com/viniciiusds/Vini-Stage/releases)
+**[Baixar Vini Stage 0.4.0 Universal.pkg](https://github.com/viniciiusds/Vini-Stage/releases/download/v0.4.0/Vini-Stage-0.4.0-Universal.pkg)** · [Todas as versões](https://github.com/viniciiusds/Vini-Stage/releases)
 
 O instalador contém o mesmo VST3 Universal para **Intel/High Sierra 10.13** e **Apple Silicon/M4**. Feche o Live, abra o `.pkg`, siga o assistente e informe a senha de administrador. Ele instala para todos os usuários em `/Library/Audio/Plug-Ins/VST3/Vini Stage.vst3`.
 
@@ -18,25 +18,26 @@ O pacote atual é de teste, **sem assinatura Developer ID Installer e sem notari
 
 ```bash
 bash package.sh
-python3 packaging/test_package.py dist/Vini-Stage-0.3.2-Universal.pkg
+python3 packaging/test_package.py dist/Vini-Stage-0.4.0-Universal.pkg
 ```
 
 O nome e a versão do `.pkg` são obtidos do VST3 compilado. Para assinar o pacote, defina `INSTALLER_SIGN_IDENTITY` com a identidade de um certificado **Developer ID Installer** disponível no chaveiro. Isso não faz a notarização automaticamente; o plugin e o pacote de distribuição ainda precisam do fluxo de assinatura e notarização apropriado.
 
-## Recursos atuais — 0.3.2
+## Recursos atuais — 0.4.0
 
 - Carregamento de `.npno` em segundo plano, com **Loading... X%** no visor e sem conversão manual para WAV. O percentual acompanha a leitura do arquivo e a decodificação das gravações.
 - Mapeamento de teclas, transposição, ajuste fino e camadas de velocity.
-- Duas seções opcionais e independentes: Select Sound, ON/OFF e fader vertical de volume em cada uma.
-- Painel vermelho, seções cinza, LEDs de ON/OFF e barras verdes que acompanham a posição dos faders, alinhadas à sua trilha.
-- Botões centralizados pelo visor do timbre e visor em dB com a largura do conjunto fader + LEDs.
+- Dois timbres opcionais A/B em um único visor **Sounds**. Sem timbre, a linha fica apenas **A:** ou **B:** e não produz som.
+- **Select A/B** abre o arquivo; após a seleção, o mesmo botão passa a **Clear A/B**. Clear remove apenas aquele timbre. Para trocar, use Clear e depois Select. Também é possível cancelar um carregamento usando Clear.
+- Painel vermelho, área cinza única à esquerda com faders A/B, LEDs verdes à direita de cada fader e visor maior à direita com fonte reduzida. Sem botões ON/OFF e sem teclado visual.
+- Visores em dB com a largura do conjunto fader + LEDs, botões Select/Clear alinhados sob o visor Sounds.
 - Faders e LEDs um pouco mais curtos, com margem de 20 px abaixo do visor mesmo no máximo (0 dB).
 - Volume de −60 a 0 dB em passos de 1 dB, com posição adicional de silêncio (−∞). Visores em dB editáveis; máximo de 0 dB.
 - Samples mono/estéreo, 128 vozes por seção e sustain CC64.
-- Volumes e ON/OFF são parâmetros disponíveis para automação no host, com transições suavizadas.
+- Volumes automatizáveis, com transições suavizadas. Os parâmetros ON/OFF antigos continuam disponíveis no host para preservar automações e estados anteriores, mas não aparecem no painel. Selecionar um novo arquivo reativa essa camada; projetos antigos com OFF continuam respeitando esse estado.
 - Os dois caminhos de timbre, os volumes e ON/OFF são salvos no estado do plugin. Volumes de projetos anteriores são arredondados para o dB inteiro mais próximo, preservando os IDs dos parâmetros. Projetos antigos com um único timbre abrem na seção Sound 1.
 - Note-off com fade suave, sem disparar o sample extra de release que causava ruído no grand piano.
-- VST3 e aplicativo standalone para macOS, com interface mínima e teclado visual.
+- VST3 e aplicativo standalone para macOS, com entrada MIDI.
 
 ## Compatibilidade
 
@@ -117,7 +118,7 @@ build/NpnoPreview_artefacts/Release/NpnoPreview "$PWD/interface.png" \
   "/caminho/para/clavinet.npno"
 ```
 
-Os dois arquivos são opcionais na prévia. A ferramenta testa os controles do editor e renderiza o layout real, com níveis demonstrativos de −3 dB e −8 dB e a segunda seção desligada. A imagem no início deste README vem desse editor, não de um mockup. Adicione `--unity` após os dois caminhos para renderizar ambos os faders em 0 dB e conferir a margem máxima; essa é a configuração usada na imagem da versão 0.3.2.
+Os dois arquivos são opcionais na prévia. A ferramenta testa os controles do editor e renderiza o layout real, com níveis demonstrativos de −3 dB e −8 dB. Quando recebe dois arquivos, testa o botão Clear B e captura A carregado e B vazio. A imagem no início deste README vem desse editor, não de um mockup. Adicione `--unity` após os dois caminhos para renderizar ambos os faders em 0 dB e conferir a margem máxima.
 
 O progresso real do leitor pode ser verificado separadamente:
 

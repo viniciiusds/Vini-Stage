@@ -16,7 +16,7 @@ public:
     }
     void prepare(double r,float volume) {std::lock_guard<std::mutex> lock(mutex);rate=r;clearVoices();gain.reset(r,0.02);gain.setCurrentAndTargetValue(volume);}
     void reset(){std::lock_guard<std::mutex> lock(mutex);clearVoices();}
-    juce::String status(){std::lock_guard<std::mutex> lock(mutex);return pending||loading?"Loading... "+juce::String(progress())+"%":message;}
+    juce::String status(){std::lock_guard<std::mutex> lock(mutex);return requestedPath.isEmpty()?juce::String{}:(pending||loading?"Loading... "+juce::String(progress())+"%":message);}
     int progress()const{return (int)(progressState.load()&127);}
     bool busy(){std::lock_guard<std::mutex> lock(mutex);return pending||loading;}
     bool ready(){std::lock_guard<std::mutex> lock(mutex);return !pending&&!loading&&library!=nullptr;}
@@ -28,7 +28,7 @@ public:
         node.setAttribute("status",busy?"Loading... "+juce::String(progress())+"%":message);
     }
     void loadFile(const juce::String& filePath,bool restoring=false) {
-        {std::lock_guard<std::mutex> lock(mutex);requestedPath=filePath;restoreRequest=restoring;++generation;progressState.store(generation<<7);pending=true;
+        {std::lock_guard<std::mutex> lock(mutex);requestedPath=filePath;if(filePath.isEmpty()){clearVoices();silenced=true;}restoreRequest=restoring;++generation;progressState.store(generation<<7);pending=true;
          message=filePath.isEmpty()?"Select a Nord .npno sound":"Loading "+juce::File(filePath).getFileName()+"...";}
         condition.notify_one();
     }
@@ -37,7 +37,7 @@ public:
         if(!lock.owns_lock()){droppedMidi.store(true);return;}
         if(droppedMidi.exchange(false)) clearVoices();
         gain.setTargetValue(enabled?volume:0.0f);
-        if(!library){gain.skip(audio.getNumSamples());return;}
+        if(!library||silenced){gain.skip(audio.getNumSamples());return;}
         int cursor=0;
         for(const auto meta:midi){
             int at=juce::jlimit(cursor,audio.getNumSamples(),meta.samplePosition);
@@ -54,7 +54,7 @@ private:
     std::unique_ptr<NpLibrary,decltype(&np_free)> library{nullptr,np_free};
     std::vector<NpView> recordings;
     std::mutex mutex;std::condition_variable condition;
-    bool stopping=false,pending=false,loading=false,restoreRequest=false;
+    bool stopping=false,pending=false,loading=false,restoreRequest=false,silenced=true;
     uint64_t generation=0,counter=0;
     juce::String path,requestedPath,message="Select a Nord .npno sound";
     double rate=44100;
@@ -89,7 +89,7 @@ private:
             }
             {std::lock_guard<std::mutex> lock(mutex);if(stopping)return;
              if(ticket==generation){
-                if(loaded||request.isEmpty()||restoring){clearVoices();library.swap(loaded);recordings.swap(records);path=request;}
+                if(loaded||request.isEmpty()||restoring||silenced){clearVoices();library.swap(loaded);recordings.swap(records);path=request;silenced=!library;}
                 if(failure.isNotEmpty())message=failure;
                 else if(library)message=juce::String::fromUTF8(np_name(library.get()));
                 else message="Select a Nord .npno sound";
@@ -203,7 +203,12 @@ public:
     void releaseResources()override{reset();}
     juce::String status(int i){return layers[(size_t)i].status();}
     bool busy(int i){return layers[(size_t)i].busy();}
-    void loadFile(int i,const juce::File& file){layers[(size_t)i].loadFile(file.getFullPathName());}
+    bool selected(int i){return layers[(size_t)i].savedPath().isNotEmpty();}
+    void clearFile(int i){layers[(size_t)i].loadFile({});updateHostDisplay(ChangeDetails().withNonParameterStateChanged(true));}
+    void loadFile(int i,const juce::File& file){
+        auto* on=parameters.getParameter(onID(i));on->beginChangeGesture();on->setValueNotifyingHost(1);on->endChangeGesture();
+        layers[(size_t)i].loadFile(file.getFullPathName());updateHostDisplay(ChangeDetails().withNonParameterStateChanged(true));
+    }
     void processBlock(juce::AudioBuffer<float>& audio,juce::MidiBuffer& midi)override{
         juce::ScopedNoDenormals guard;audio.clear();keyboard.processNextMidiBuffer(midi,0,audio.getNumSamples(),true);
         for(int i=0;i<2;++i)layers[(size_t)i].process(audio,midi,enabled[(size_t)i]->load()>0.5f,Volume::snap(volumes[(size_t)i]->load()));
@@ -252,18 +257,16 @@ private:
     }
 };
 
-class LayerPanel final:public juce::Component {
+class VolumePanel final:public juce::Component {
 public:
-    LayerPanel(Player& p,int number):player(p),index(number),texture(Hardware::grain()){
-        setLookAndFeel(&look);
-        for(auto* c:std::array<juce::Component*,5>{&select,&on,&name,&volume,&readout})addAndMakeVisible(c);
-        select.setButtonText("SELECT SOUND");
-        on.setComponentID("power");on.setClickingTogglesState(true);on.setTitle("Sound "+juce::String(index+1)+" ON/OFF");on.setTooltip("Enable or mute this sound");
-        name.setJustificationType(juce::Justification::centred);name.setFont(Hardware::font(15));name.setColour(juce::Label::textColourId,juce::Colour(0xffadffd0));
-        readout.setJustificationType(juce::Justification::centred);readout.setFont(Hardware::font(17));readout.setColour(juce::Label::textColourId,juce::Colour(0xffadffd0));
-        readout.setEditable(true,true,false);readout.setTitle("Volume in dB");readout.setTooltip("Type a volume from -60 to 0 dB; -inf mutes");
-        volume.setTitle("Sound "+juce::String(index+1)+" Volume");volume.setTooltip("1 dB steps; maximum 0 dB; bottom mutes");
-        toggleAttachment=std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(player.parameters,Player::onID(index),on);
+    VolumePanel(Player& p,int number):player(p),index(number){
+        setLookAndFeel(&look);addAndMakeVisible(volume);addAndMakeVisible(readout);
+        readout.setJustificationType(juce::Justification::centred);readout.setFont(Hardware::font(18));
+        readout.setColour(juce::Label::textColourId,juce::Colour(0xffadffd0));
+        readout.setEditable(true,true,false);readout.setTitle("Volume in dB");
+        readout.setTooltip("Type -60 to 0 dB; -inf mutes");
+        volume.setTitle("Sound "+juce::String(index+1)+" Volume");
+        volume.setTooltip("1 dB steps; maximum 0 dB; bottom mutes");
         volumeAttachment=std::make_unique<juce::ParameterAttachment>(*player.parameters.getParameter(Player::volumeID(index)),[this](float gain){volume.setValue(Volume::decibels(gain),juce::dontSendNotification);updateVolume();});
         volume.onValueChange=[this]{
             float gain=Volume::linear(juce::roundToInt(volume.getValue()));
@@ -277,33 +280,12 @@ public:
             volume.setValue(juce::jlimit(Volume::muteDb,0,db),juce::sendNotificationSync);updateVolume();
         };
         volumeAttachment->sendInitialUpdate();
-        select.onClick=[this]{
-            chooser=std::make_unique<juce::FileChooser>("Select Nord piano — Sound "+juce::String(index+1),juce::File{},"*.npno",true);
-            chooser->launchAsync(juce::FileBrowserComponent::openMode|juce::FileBrowserComponent::canSelectFiles,
-                [safe=juce::Component::SafePointer<LayerPanel>(this)](const juce::FileChooser& c){if(safe&&c.getResult().existsAsFile())safe->player.loadFile(safe->index,c.getResult());});
-        };refresh();
     }
-    ~LayerPanel()override{setLookAndFeel(nullptr);}
-    void refresh(){
-        auto text=player.status(index);if(text=="Select a Nord .npno sound")text="No sound selected";
-        name.setText(text,juce::dontSendNotification);name.setTooltip(player.status(index));select.setEnabled(!player.busy(index));
-        bool enabled=on.getToggleState();if(enabled!=lastOn){lastOn=enabled;repaint();}
-        updateVolume();
-    }
+    ~VolumePanel()override{setLookAndFeel(nullptr);}
     void paint(juce::Graphics& g)override{
-        auto bounds=getLocalBounds().toFloat().reduced(1);
-        g.setColour(juce::Colour(0xff050909));g.fillRoundedRectangle(bounds,9);
-        g.setColour(juce::Colour(0xffa9b5b5));g.drawRoundedRectangle(bounds.reduced(1),8,1.5f);
-        auto panel=bounds.reduced(5);
-        g.setGradientFill(juce::ColourGradient(juce::Colour(0xff263b40),panel.getTopLeft(),juce::Colour(0xff182429),panel.getBottomRight(),false));g.fillRoundedRectangle(panel,6);
-        g.saveState();g.reduceClipRegion(panel.toNearestInt());g.setTiledImageFill(texture,0,0,1);g.fillRect(panel);g.restoreState();
-        auto header=juce::Rectangle<float>(8,8,(float)getWidth()-16,33);
-        g.setGradientFill(juce::ColourGradient(juce::Colour(0xffd8dcd9),header.getTopLeft(),juce::Colour(0xff9fa8a7),header.getBottomLeft(),false));g.fillRoundedRectangle(header,3);
-        g.setColour(juce::Colour(0xff172126));g.setFont(Hardware::font(18,true));g.drawText("SOUND "+juce::String(index+1),22,10,200,29,juce::Justification::centredLeft);
-        Hardware::lcd(g,name.getBounds().toFloat());Hardware::lcd(g,readout.getBounds().toFloat());
-        const float powerLedX=(float)on.getX()-28;
-        Hardware::led(g,{powerLedX,(float)on.getBounds().getCentreY()},on.getToggleState());
-        g.setColour(juce::Colour(0xffe1e8e7));g.setFont(Hardware::font(12,true));g.drawText(on.getToggleState()?"ON":"OFF",(int)powerLedX-20,on.getBottom()-12,40,20,juce::Justification::centred);
+        Hardware::lcd(g,readout.getBounds().toFloat());
+        g.setColour(juce::Colour(0xffe1e8e7));g.setFont(Hardware::font(26));
+        g.drawText(index==0?"A":"B",0,getHeight()-36,getWidth(),30,juce::Justification::centred);
         // These LEDs show the stored fader setting, not the audio signal level.
         const int lit=juce::roundToInt((float)(volume.getValue()-Volume::muteDb)/(float)-Volume::muteDb*16.0f);
         const auto track=ledBounds.toFloat();
@@ -316,44 +298,78 @@ public:
         }
     }
     void resized()override{
-        name.setBounds(38,78,190,42);
-        select.setBounds(name.getBounds().getCentreX()-75,136,150,33);
-        on.setBounds(name.getBounds().getCentreX()-24,202,48,49);
-        volume.setBounds(getWidth()-146,106,46,154);
-        ledBounds={volume.getRight()+10,volume.getY()+Hardware::faderInset,18,volume.getHeight()-2*Hardware::faderInset};
-        readout.setBounds(volume.getX(),61,ledBounds.getRight()-volume.getX(),25);
+        const int left=(getWidth()-84)/2;
+        readout.setBounds(left,0,84,32);
+        volume.setBounds(left,54,52,getHeight()-98);
+        ledBounds={volume.getRight()+10,volume.getY()+Hardware::faderInset,22,volume.getHeight()-2*Hardware::faderInset};
     }
 private:
-    Player& player;int index;bool dragging=false,lastOn=true;
-    Hardware::Look look;juce::Image texture;
-    juce::Label name,readout;juce::TextButton select,on;Hardware::Fader volume;
-    juce::Rectangle<int> ledBounds;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> toggleAttachment;
+    Player& player;int index;bool dragging=false;
+    Hardware::Look look;juce::Label readout;Hardware::Fader volume;juce::Rectangle<int> ledBounds;
     std::unique_ptr<juce::ParameterAttachment> volumeAttachment;
-    std::unique_ptr<juce::FileChooser> chooser;
     void updateVolume(){int db=juce::roundToInt(volume.getValue());readout.setText(db==Volume::muteDb?juce::String::fromUTF8("−∞ dB"):juce::String(db)+" dB",juce::dontSendNotification);repaint();}
 };
 
 class Editor final:public juce::AudioProcessorEditor,private juce::Timer {
 public:
-    explicit Editor(Player& p):AudioProcessorEditor(p),first(p,0),second(p,1),keys(p.keyboard,juce::MidiKeyboardComponent::horizontalKeyboard),texture(Hardware::grain()){
-        addAndMakeVisible(first);addAndMakeVisible(second);addAndMakeVisible(keys);
-        keys.setAvailableRange(21,108);keys.setLowestVisibleKey(21);keys.setKeyWidth(17);
-        setSize(1000,500);startTimerHz(10);
+    explicit Editor(Player& p):AudioProcessorEditor(p),player(p),first(p,0),second(p,1),texture(Hardware::grain()){
+        setLookAndFeel(&look);addAndMakeVisible(first);addAndMakeVisible(second);
+        for(int i=0;i<2;++i){
+            auto& row=rows[(size_t)i];addAndMakeVisible(row);row.setFont(Hardware::font(23));
+            row.setColour(juce::Label::textColourId,juce::Colour(0xffe8eeee));
+            row.setJustificationType(juce::Justification::centredLeft);
+            row.setTitle(i==0?"Sound A":"Sound B");
+            auto& button=buttons[(size_t)i];addAndMakeVisible(button);
+            button.setTitle(i==0?"Select or clear A":"Select or clear B");
+            button.onClick=[this,i]{
+                if(player.selected(i)){player.clearFile(i);refresh();return;}
+                chooser=std::make_unique<juce::FileChooser>(i==0?"Select sound A":"Select sound B",juce::File{},"*.npno",true);
+                chooser->launchAsync(juce::FileBrowserComponent::openMode|juce::FileBrowserComponent::canSelectFiles,
+                    [safe=juce::Component::SafePointer<Editor>(this),i](const juce::FileChooser& c){
+                        if(safe&&c.getResult().existsAsFile()){safe->player.loadFile(i,c.getResult());safe->refresh();}
+                    });
+            };
+        }
+        setSize(1000,500);refresh();startTimerHz(10);
     }
+    ~Editor()override{setLookAndFeel(nullptr);}
     void paint(juce::Graphics& g)override{
         g.fillAll(juce::Colour(0xff111514));auto r=getLocalBounds().toFloat().reduced(4);
         g.setGradientFill(juce::ColourGradient(juce::Colour(0xffbd252a),r.getTopLeft(),juce::Colour(0xff79070e),r.getBottomRight(),false));g.fillRoundedRectangle(r,12);
         g.saveState();juce::Path clip;clip.addRoundedRectangle(r,12);g.reduceClipRegion(clip);g.setTiledImageFill(texture,0,0,1);g.fillRect(r);g.restoreState();
         g.setColour(juce::Colour(0xffed6a67).withAlpha(0.65f));g.drawRoundedRectangle(r.reduced(1),11,1);
-        g.setColour(juce::Colour(0xffe2e5e1));g.setFont(Hardware::font(40,true));g.drawText("Vini Stage",64,12,400,46,juce::Justification::centredLeft);
+        g.setColour(juce::Colour(0xffe2e5e1));g.setFont(Hardware::font(40,true));g.drawText("Vini",58,7,88,46,juce::Justification::centredLeft);
+        g.setFont(juce::Font(juce::FontOptions(40).withStyle("Medium")));g.drawText("Stage",148,7,160,46,juce::Justification::centredLeft);
         Hardware::screw(g,19,19);Hardware::screw(g,(float)getWidth()-19,19);Hardware::screw(g,19,(float)getHeight()-19);Hardware::screw(g,(float)getWidth()-19,(float)getHeight()-19);
-        auto kb=keys.getBounds().toFloat().expanded(5);g.setColour(juce::Colour(0xff32040a));g.fillRoundedRectangle(kb,4);g.setColour(juce::Colours::black);g.drawRoundedRectangle(kb,4,2);
+        auto panel=juce::Rectangle<float>(32,60,344,392);
+        g.setColour(juce::Colour(0xffa1abab));g.fillRoundedRectangle(panel,8);
+        panel=panel.reduced(2);g.setGradientFill(juce::ColourGradient(juce::Colour(0xff303b40),panel.getTopLeft(),juce::Colour(0xff1b252a),panel.getBottomRight(),false));g.fillRoundedRectangle(panel,7);
+        g.saveState();g.reduceClipRegion(panel.toNearestInt());g.setTiledImageFill(texture,0,0,1);g.fillRect(panel);g.restoreState();
+        auto header=juce::Rectangle<float>(35,63,338,35);
+        g.setGradientFill(juce::ColourGradient(juce::Colour(0xffd8dcd9),header.getTopLeft(),juce::Colour(0xff9fa8a7),header.getBottomLeft(),false));g.fillRoundedRectangle(header,4);
+        g.setColour(juce::Colour(0xff172126));g.setFont(Hardware::font(18));g.drawText("L E V E L S",header,juce::Justification::centred);
+        Hardware::lcd(g,{406,74,562,246});
+        g.setColour(juce::Colour(0xffe8eeee));g.setFont(Hardware::font(30,true));g.drawText("Sounds",448,111,470,38,juce::Justification::centredLeft);
+        g.setColour(juce::Colour(0xffbfc8c6));g.drawLine(448,162,929,162,1);
     }
-    void resized()override{first.setBounds(44,70,438,270);second.setBounds(518,70,438,270);keys.setBounds(44,366,912,110);}
+    void resized()override{
+        first.setBounds(60,114,135,322);second.setBounds(218,114,135,322);
+        rows[0].setBounds(444,181,492,42);rows[1].setBounds(444,231,492,42);
+        buttons[0].setBounds(466,347,172,73);buttons[1].setBounds(738,347,172,73);
+    }
 private:
-    LayerPanel first,second;juce::MidiKeyboardComponent keys;juce::Image texture;
-    void timerCallback()override{first.refresh();second.refresh();}
+    Player& player;Hardware::Look look;VolumePanel first,second;juce::Image texture;
+    std::array<juce::Label,2> rows;std::array<juce::TextButton,2> buttons;
+    std::unique_ptr<juce::FileChooser> chooser;
+    void refresh(){
+        for(int i=0;i<2;++i){auto letter=i==0?juce::String("A"):juce::String("B");
+            rows[(size_t)i].setText(letter+":"+(player.status(i).isEmpty()?juce::String{}:" "+player.status(i)),juce::dontSendNotification);
+            rows[(size_t)i].setTooltip(player.status(i));
+            buttons[(size_t)i].setButtonText((player.selected(i)?"Clear ":"Select ")+letter);
+            buttons[(size_t)i].setTooltip(player.selected(i)?"Remove sound "+letter:"Choose a .npno file for "+letter);
+        }
+    }
+    void timerCallback()override{refresh();}
 };
 juce::AudioProcessorEditor* Player::createEditor(){return new Editor(*this);}
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter(){return new Player();}
