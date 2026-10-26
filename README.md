@@ -2,14 +2,15 @@
 
 Instrumento **Vini Stage**: um VST3 simples para carregar arquivos Nord `.npno` diretamente no Ableton Live 11. Clique em **Select Sound**, escolha um arquivo e toque por MIDI.
 
-![Layout vermelho com duas seções, faders verticais, LEDs e volume em dB](docs/interface.png)
+![Layout vermelho com duas seções, faders verticais, LEDs e volume em dB](docs/interface-0.3.1.png)
 
-## Recursos atuais — 0.3.0
+## Recursos atuais — 0.3.1
 
-- Carregamento de `.npno` em segundo plano, sem conversão manual para WAV.
+- Carregamento de `.npno` em segundo plano, com **Loading... X%** no visor e sem conversão manual para WAV. O percentual acompanha a leitura do arquivo e a decodificação das gravações.
 - Mapeamento de teclas, transposição, ajuste fino e camadas de velocity.
 - Duas seções opcionais e independentes: Select Sound, ON/OFF e fader vertical de volume em cada uma.
-- Painel vermelho, seções cinza, LEDs de ON/OFF e barras verdes que acompanham a posição dos faders.
+- Painel vermelho, seções cinza, LEDs de ON/OFF e barras verdes que acompanham a posição dos faders, alinhadas à sua trilha.
+- Botões centralizados pelo visor do timbre e visor em dB com a largura do conjunto fader + LEDs.
 - Volume de −60 a 0 dB em passos de 1 dB, com posição adicional de silêncio (−∞). Visores em dB editáveis; máximo de 0 dB.
 - Samples mono/estéreo, 128 vozes por seção e sustain CC64.
 - Volumes e ON/OFF são parâmetros disponíveis para automação no host, com transições suavizadas.
@@ -97,3 +98,10 @@ build/NpnoPreview_artefacts/Release/NpnoPreview "$PWD/interface.png" \
 ```
 
 Os dois arquivos são opcionais na prévia. A ferramenta testa os controles do editor e renderiza o layout real, com níveis demonstrativos de −3 dB e −8 dB e a segunda seção desligada. A imagem no início deste README vem desse editor, não de um mockup.
+
+O progresso real do leitor pode ser verificado separadamente:
+
+```bash
+cmake --build build --target NpnoProgress --config Release -j 4
+build/NpnoProgress "/caminho/para/piano.npno"
+```

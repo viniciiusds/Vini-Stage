@@ -3,6 +3,7 @@
 #include "Volume.h"
 
 namespace Hardware {
+constexpr int faderInset=14;
 inline juce::Image grain() {
     juce::Image image(juce::Image::ARGB,64,64,true);
     juce::Random random(42);
@@ -35,6 +36,9 @@ inline void screw(juce::Graphics& g,float x,float y) {
 
 class Look final:public juce::LookAndFeel_V4 {
 public:
+    juce::Slider::SliderLayout getSliderLayout(juce::Slider& slider)override{
+        juce::Slider::SliderLayout layout;layout.sliderBounds=slider.getLocalBounds().reduced(0,faderInset);return layout;
+    }
     void drawButtonBackground(juce::Graphics& g,juce::Button& button,const juce::Colour&,bool over,bool down)override {
         auto r=button.getLocalBounds().toFloat().reduced(2);
         g.setColour(juce::Colours::black.withAlpha(0.6f));g.fillRoundedRectangle(r.translated(0,2),3);
@@ -51,7 +55,7 @@ public:
         g.setColour(juce::Colour(0xffd8dfde).withAlpha(button.isEnabled()?1.0f:0.45f));g.setFont(font(13,true));g.drawText(button.getButtonText(),button.getLocalBounds().reduced(6),juce::Justification::centred);
     }
     void drawLinearSlider(juce::Graphics& g,int x,int y,int width,int height,float sliderPos,float,float,juce::Slider::SliderStyle,juce::Slider&)override {
-        float centre=(float)x+(float)width*0.5f,top=(float)y+10,bottom=(float)(y+height)-10;
+        float centre=(float)x+(float)width*0.5f,top=(float)y,bottom=(float)(y+height);
         g.setColour(juce::Colour(0xff737c7d));g.fillRoundedRectangle(centre-4,top-1,8,bottom-top+2,3);
         g.setColour(juce::Colour(0xff020606));g.fillRoundedRectangle(centre-3,top,6,bottom-top,3);
         for(int i=0;i<=12;++i){float at=top+(bottom-top)*(float)i/12.0f;g.setColour(juce::Colour(0xffc0c9c9));g.drawLine(centre-17,at,centre-11,at,1);g.drawLine(centre+11,at,centre+17,at,1);}

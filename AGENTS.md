@@ -10,3 +10,5 @@
 - Clearly distinguish native host tests from real Ableton/High Sierra validation. Velocity thresholds, loops and Nord envelope modelling are not yet exact.
 
 - Preserve the approved red/charcoal hardware layout, no manufacturer text in the header, only four external screws and no screws inside the sound sections. README imagery must be rendered from the actual current editor, not the concept image.
+
+- Display actual file-read/decode progress as Loading... X% in each sound LCD. Do not replace it with timer-driven progress. Align the buttons with the sound LCD and the LED column with the fader track; keep the dB LCD as wide as the fader/LED group and no visible Volume heading.

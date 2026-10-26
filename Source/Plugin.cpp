@@ -16,12 +16,19 @@ public:
     }
     void prepare(double r,float volume) {std::lock_guard<std::mutex> lock(mutex);rate=r;clearVoices();gain.reset(r,0.02);gain.setCurrentAndTargetValue(volume);}
     void reset(){std::lock_guard<std::mutex> lock(mutex);clearVoices();}
-    juce::String status(){std::lock_guard<std::mutex> lock(mutex);return message;}
+    juce::String status(){std::lock_guard<std::mutex> lock(mutex);return pending||loading?"Loading... "+juce::String(progress())+"%":message;}
+    int progress()const{return (int)(progressState.load()&127);}
     bool busy(){std::lock_guard<std::mutex> lock(mutex);return pending||loading;}
     bool ready(){std::lock_guard<std::mutex> lock(mutex);return !pending&&!loading&&library!=nullptr;}
     juce::String savedPath(){std::lock_guard<std::mutex> lock(mutex);return pending||loading?requestedPath:path;}
+    void writeState(juce::XmlElement& node){
+        std::lock_guard<std::mutex> lock(mutex);const bool busy=pending||loading;
+        node.setAttribute("samplePath",busy?requestedPath:path);node.setAttribute("ready",!busy&&library!=nullptr);
+        node.setAttribute("loading",busy);node.setAttribute("progress",progress());
+        node.setAttribute("status",busy?"Loading... "+juce::String(progress())+"%":message);
+    }
     void loadFile(const juce::String& filePath,bool restoring=false) {
-        {std::lock_guard<std::mutex> lock(mutex);requestedPath=filePath;restoreRequest=restoring;++generation;pending=true;
+        {std::lock_guard<std::mutex> lock(mutex);requestedPath=filePath;restoreRequest=restoring;++generation;progressState.store(generation<<7);pending=true;
          message=filePath.isEmpty()?"Select a Nord .npno sound":"Loading "+juce::File(filePath).getFileName()+"...";}
         condition.notify_one();
     }
@@ -53,6 +60,14 @@ private:
     double rate=44100;
     juce::SmoothedValue<float> gain{1.0f};
     std::atomic<bool> droppedMidi{false};
+    std::atomic<uint64_t> progressState{0};
+    struct ProgressContext{SoundLayer* layer;uint64_t ticket;};
+    static void loadingProgress(void* context,uint32_t percent){
+        auto& value=*static_cast<ProgressContext*>(context);
+        auto current=value.layer->progressState.load();
+        while((current>>7)==value.ticket)
+            if(value.layer->progressState.compare_exchange_weak(current,(value.ticket<<7)|percent))break;
+    }
     std::thread loader;
     void clearVoices(){voices.fill({});sustain.fill(false);}
     void loadLoop(){
@@ -66,7 +81,8 @@ private:
             if(request.isNotEmpty()){
                 if(!juce::File(request).existsAsFile())failure="Sound missing. Use Select Sound to locate it.";
                 else{
-                    loaded.reset(np_load(request.toRawUTF8(),error,sizeof(error)));
+                    ProgressContext progressContext{this,ticket};
+                    loaded.reset(np_load_with_progress(request.toRawUTF8(),error,sizeof(error),loadingProgress,&progressContext));
                     if(loaded){records.resize(np_count(loaded.get()));for(size_t i=0;i<records.size();++i)np_recording(loaded.get(),i,&records[i]);}
                     else failure="Could not load: "+juce::String::fromUTF8(error);
                 }
@@ -198,7 +214,7 @@ public:
     void getStateInformation(juce::MemoryBlock& dest)override{
         juce::XmlElement xml("NPnoPlayer");xml.setAttribute("version",3);
         xml.setAttribute("samplePath",layers[0].savedPath());
-        for(int i=0;i<2;++i){auto* slot=xml.createNewChildElement("Slot");slot->setAttribute("index",i);slot->setAttribute("samplePath",layers[(size_t)i].savedPath());slot->setAttribute("ready",layers[(size_t)i].ready());slot->setAttribute("loading",layers[(size_t)i].busy());}
+        for(int i=0;i<2;++i){auto* slot=xml.createNewChildElement("Slot");slot->setAttribute("index",i);layers[(size_t)i].writeState(*slot);}
         xml.addChildElement(parameters.copyState().createXml().release());copyXmlToBinary(xml,dest);
     }
     void setStateInformation(const void* data,int bytes)override{
@@ -285,26 +301,33 @@ public:
         g.setGradientFill(juce::ColourGradient(juce::Colour(0xffd8dcd9),header.getTopLeft(),juce::Colour(0xff9fa8a7),header.getBottomLeft(),false));g.fillRoundedRectangle(header,3);
         g.setColour(juce::Colour(0xff172126));g.setFont(Hardware::font(18,true));g.drawText("SOUND "+juce::String(index+1),22,10,200,29,juce::Justification::centredLeft);
         Hardware::lcd(g,name.getBounds().toFloat());Hardware::lcd(g,readout.getBounds().toFloat());
-        g.setColour(juce::Colour(0xffdfe6e5));g.setFont(Hardware::font(12,true));g.drawText("VOLUME",readout.getX()-5,43,readout.getWidth()+10,18,juce::Justification::centred);
-        Hardware::led(g,{78.0f,222.0f},on.getToggleState());
-        g.setColour(juce::Colour(0xffe1e8e7));g.setFont(Hardware::font(12,true));g.drawText(on.getToggleState()?"ON":"OFF",58,239,40,20,juce::Justification::centred);
+        const float powerLedX=(float)on.getX()-28;
+        Hardware::led(g,{powerLedX,(float)on.getBounds().getCentreY()},on.getToggleState());
+        g.setColour(juce::Colour(0xffe1e8e7));g.setFont(Hardware::font(12,true));g.drawText(on.getToggleState()?"ON":"OFF",(int)powerLedX-20,on.getBottom()-12,40,20,juce::Justification::centred);
         // These LEDs show the stored fader setting, not the audio signal level.
         const int lit=juce::roundToInt((float)(volume.getValue()-Volume::muteDb)/(float)-Volume::muteDb*16.0f);
-        float x=(float)getWidth()-75,y=99;
-        g.setColour(juce::Colour(0xff040a09));g.fillRoundedRectangle(x-3,y-4,19,160,2);
-        for(int i=0;i<16;++i){float at=y+(float)(15-i)*9.5f;juce::Rectangle<float> cell(x,at,13,7);
+        const auto track=ledBounds.toFloat();
+        g.setColour(juce::Colour(0xff040a09));g.fillRoundedRectangle(track,2);
+        const auto inside=track.reduced(3,2);
+        const float gap=3,cellHeight=(inside.getHeight()-15*gap)/16.0f;
+        for(int i=0;i<16;++i){float at=inside.getY()+(float)(15-i)*(cellHeight+gap);juce::Rectangle<float> cell(inside.getX(),at,inside.getWidth(),cellHeight);
             if(i<lit){g.setColour(juce::Colour(0xff3dff0b).withAlpha(0.13f));g.fillRoundedRectangle(cell.expanded(2),2);g.setGradientFill(juce::ColourGradient(juce::Colour(0xff9dff3d),cell.getTopLeft(),juce::Colour(0xff19d90a),cell.getBottomLeft(),false));}
             else g.setColour(juce::Colour(0xff374649));g.fillRoundedRectangle(cell,1);
         }
     }
     void resized()override{
-        name.setBounds(38,78,190,42);select.setBounds(60,136,150,33);on.setBounds(112,202,48,49);
-        readout.setBounds(getWidth()-163,61,85,25);volume.setBounds(getWidth()-155,89,46,170);
+        name.setBounds(38,78,190,42);
+        select.setBounds(name.getBounds().getCentreX()-75,136,150,33);
+        on.setBounds(name.getBounds().getCentreX()-24,202,48,49);
+        volume.setBounds(getWidth()-146,90,46,170);
+        ledBounds={volume.getRight()+10,volume.getY()+Hardware::faderInset,18,volume.getHeight()-2*Hardware::faderInset};
+        readout.setBounds(volume.getX(),61,ledBounds.getRight()-volume.getX(),25);
     }
 private:
     Player& player;int index;bool dragging=false,lastOn=true;
     Hardware::Look look;juce::Image texture;
     juce::Label name,readout;juce::TextButton select,on;Hardware::Fader volume;
+    juce::Rectangle<int> ledBounds;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> toggleAttachment;
     std::unique_ptr<juce::ParameterAttachment> volumeAttachment;
     std::unique_ptr<juce::FileChooser> chooser;

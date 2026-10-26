@@ -1,4 +1,4 @@
-# Vini Stage 0.3.0 — versão de teste
+# Vini Stage 0.3.1 — versão de teste
 
 Instrumento VST3 com botão **Select Sound** para abrir um arquivo `.npno` diretamente. Os samples são decodificados em memória; não é necessário converter ou importar WAVs.
 
@@ -8,7 +8,7 @@ Instrumento VST3 com botão **Select Sound** para abrir um arquivo `.npno` diret
 2. Neste M4, as novas compilações já instalam o plugin automaticamente em `~/Library/Audio/Plug-Ins/VST3/`. Para instalar em outro Mac, copie **Vini Stage.vst3** para essa pasta ou execute `Instalar.command`.
 3. No Live 11, abra Preferences → Plug-Ins e habilite **Use VST3 Plug-In System Folders**. Use **Rescan** se necessário.
 4. Em Plug-Ins → VST3 → Vinizera, coloque **Vini Stage** em uma pista MIDI.
-5. Em **Sound 1** ou **Sound 2**, clique em **Select Sound**, escolha seu `.npno` e aguarde o nome aparecer. Basta carregar uma das seções; a segunda é opcional.
+5. Em **Sound 1** ou **Sound 2**, clique em **Select Sound**, escolha seu `.npno` e acompanhe **Loading... X%** no visor até o nome aparecer. Basta carregar uma das seções; a segunda é opcional.
 6. Cada seção tem seu próprio botão **ON/OFF** e um fader vertical **Volume** em passos de **1 dB**, de **−60 dB a 0 dB**, com uma posição adicional **−∞ dB** que silencia o timbre. Os dois timbres recebem o mesmo MIDI e são somados na saída estéreo. Se a soma ficar alta, reduza os volumes.
 7. O visor acima do fader mostra o valor em dB e permite digitá-lo. As setas e cada passo da roda do mouse alteram 1 dB; duplo clique no fader retorna a 0 dB. Os LEDs verdes indicam a posição do fader; o LED vermelho mostra se a seção está ON ou OFF.
 8. Toque pelo teclado MIDI ou use o teclado visual. CC64 controla o sustain.
@@ -54,3 +54,7 @@ Duas seções independentes e opcionais com seleção de arquivo, ON/OFF e volum
 ## Versão 0.3.0
 
 Novo painel vermelho e cinza conforme o layout aprovado, quatro parafusos externos e nenhum interno. Faders verticais em passos de 1 dB, LEDs e visores numéricos. O máximo é 0 dB (ganho unitário), o menor nível audível é −60 dB e a posição inferior é −∞ (mute). A soma de dois timbres pode exigir reduzir seus volumes. Os níveis de projetos antigos são convertidos para o dB inteiro mais próximo; os caminhos, ON/OFF e os IDs de automação foram preservados.
+
+## Versão 0.3.1
+
+Progresso real de leitura e decodificação no visor do timbre (Loading... X%). Botões Select Sound e ON/OFF centralizados pelo visor do timbre, sem o texto Volume. Visor em dB com a largura do conjunto fader + LEDs, e coluna de LEDs alinhada aos limites verticais da trilha do fader.

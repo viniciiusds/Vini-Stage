@@ -30,6 +30,9 @@ void waitFor(Plugin& plugin,const std::array<juce::String,2>& paths){
         auto xml=snapshot(plugin);int found=0;
         for(auto* slot:xml->getChildIterator())if(slot->hasTagName("Slot")){
             int i=slot->getIntAttribute("index",-1);if(i<0||i>=2)continue;
+            const int percent=slot->getIntAttribute("progress",-1);
+            require(percent>=0&&percent<=100,"Loading percentage out of range");
+            if(slot->getBoolAttribute("loading"))require(slot->getStringAttribute("status").startsWith("Loading... ")&&slot->getStringAttribute("status").endsWith("%"),"Loading percentage missing from sound display");
             bool expectedReady=paths[(size_t)i].isNotEmpty()&&juce::File(paths[(size_t)i]).existsAsFile();
             if(slot->getStringAttribute("samplePath")==paths[(size_t)i]&&!slot->getBoolAttribute("loading")&&slot->getBoolAttribute("ready")==expectedReady)++found;
         }

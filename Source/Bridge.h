@@ -5,6 +5,8 @@ extern "C" {
 struct NpLibrary;
 struct NpView { const float* data; size_t frames; uint16_t channels; uint8_t root, bank, layer; };
 NpLibrary* np_load(const char*, char*, size_t);
+using NpProgressCallback=void (*)(void*,uint32_t);
+NpLibrary* np_load_with_progress(const char*,char*,size_t,NpProgressCallback,void*);
 void np_free(NpLibrary*);
 const char* np_name(const NpLibrary*);
 size_t np_count(const NpLibrary*);
