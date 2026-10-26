@@ -2,15 +2,15 @@
 
 Instrumento **Vini Stage**: um VST3 simples para carregar arquivos Nord `.npno` diretamente no Ableton Live 11. Clique em **Select A** ou **Select B**, escolha um arquivo e toque por MIDI.
 
-![Editor compilado com 88 teclas, logo em minúsculas e painel sem parafusos](docs/interface-0.4.2.png)
+![Editor compilado com 88 teclas, logo em minúsculas e painel sem parafusos](docs/interface-0.4.3.png)
 
 Layout com teclado de **88 teclas (A0–C8)** na parte inferior, clicável com o mouse e com destaque das notas recebidas por MIDI. Logo `vini stage` ao lado de Levels, painel sem parafusos, botões Select/Clear menores e faders/LEDs alongados para cima, com margens iguais acima e abaixo dos LEDs. A imagem é uma captura direta do editor compilado, com um acorde MIDI demonstrativo.
 
-**Correção de arraste em desenvolvimento (na `main`):** os faders preservam o ponto onde a alça foi segurada e atualizam volume, LEDs e visor durante o movimento, antes de soltar o mouse. O teste do editor envia três posições de arraste para cada fader e confere as alterações de parâmetro antes do mouse-up. O instalador 0.4.2 abaixo é anterior a essa correção; nenhum novo pacote foi publicado ainda.
+**Correção de arraste incluída no instalador 0.4.3:** os faders preservam o ponto onde a alça foi segurada e atualizam volume, LEDs e visor durante o movimento, antes de soltar o mouse. O teste do editor envia três posições de arraste para cada fader e confere as alterações de parâmetro antes do mouse-up. Duplo clique continua retornando a 0 dB.
 
 ## Instalador Universal `.pkg`
 
-**[Baixar Vini Stage 0.4.2 Universal.pkg](https://github.com/viniciiusds/Vini-Stage/releases/download/v0.4.2/Vini-Stage-0.4.2-Universal.pkg)** · [Todas as versões](https://github.com/viniciiusds/Vini-Stage/releases)
+**[Baixar Vini Stage 0.4.3 Universal.pkg](https://github.com/viniciiusds/Vini-Stage/releases/download/v0.4.3/Vini-Stage-0.4.3-Universal.pkg)** · [Todas as versões](https://github.com/viniciiusds/Vini-Stage/releases)
 
 O instalador contém o mesmo VST3 Universal para **Intel/High Sierra 10.13** e **Apple Silicon/M4**. Feche o Live, abra o `.pkg`, siga o assistente e informe a senha de administrador. Ele instala para todos os usuários em `/Library/Audio/Plug-Ins/VST3/Vini Stage.vst3`.
 
@@ -22,12 +22,12 @@ O pacote atual é de teste, **sem assinatura Developer ID Installer e sem notari
 
 ```bash
 bash package.sh
-python3 packaging/test_package.py dist/Vini-Stage-0.4.2-Universal.pkg
+python3 packaging/test_package.py dist/Vini-Stage-0.4.3-Universal.pkg
 ```
 
 O nome e a versão do `.pkg` são obtidos do VST3 compilado. Para assinar o pacote, defina `INSTALLER_SIGN_IDENTITY` com a identidade de um certificado **Developer ID Installer** disponível no chaveiro. Isso não faz a notarização automaticamente; o plugin e o pacote de distribuição ainda precisam do fluxo de assinatura e notarização apropriado.
 
-## Recursos atuais — 0.4.2
+## Recursos atuais — 0.4.3
 
 - Carregamento de `.npno` em segundo plano, com **Loading... X%** no visor e sem conversão manual para WAV. O percentual acompanha a leitura do arquivo e a decodificação das gravações.
 - Mapeamento de teclas, transposição, ajuste fino e camadas de velocity.
