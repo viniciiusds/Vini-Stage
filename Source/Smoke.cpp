@@ -1,6 +1,8 @@
 #include <JuceHeader.h>
 #include <iostream>
 
+int testLayers(juce::AudioPluginFormatManager&,const juce::PluginDescription&,const juce::String&,const juce::String&);
+
 int main(int argc,char** argv) {
     juce::ScopedJuceInitialiser_GUI init;
     if(argc<3) {std::cerr<<"Usage: NpnoSmoke plugin.vst3 sound.npno\n";return 1;}
@@ -27,7 +29,10 @@ int main(int argc,char** argv) {
             if(auto* component=s->getChildByName("IComponent")) {
                 juce::MemoryBlock bytes;bytes.fromBase64Encoding(component->getAllSubText());
                 if(auto content=juce::AudioProcessor::getXmlFromBinary(bytes.getData(),(int)bytes.getSize()))
-                    if(content->getStringAttribute("samplePath").isNotEmpty()){loaded=true;break;}
+                    if(content->getStringAttribute("samplePath").isNotEmpty()){
+                        auto* slot=content->getChildByName("Slot");
+                        if(!slot || (slot->getBoolAttribute("ready") && !slot->getBoolAttribute("loading"))){loaded=true;break;}
+                    }
             }
         }
         plugin->processBlock(buffer,midi); juce::Thread::sleep(50);
@@ -64,4 +69,5 @@ int main(int argc,char** argv) {
     std::cout<<"PASS sustain hold and release\n";
     plugin->releaseResources();
     std::cout<<"PASS "<<tests<<" note/velocity combinations; state restored from .npno path\n";
+    if(argc>=4) return testLayers(manager,*descriptions[0],juce::File(argv[2]).getFullPathName(),juce::File(argv[3]).getFullPathName());
 }

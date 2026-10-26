@@ -2,12 +2,16 @@
 
 Instrumento **Vini Stage**: um VST3 simples para carregar arquivos Nord `.npno` diretamente no Ableton Live 11. Clique em **Select Sound**, escolha um arquivo e toque por MIDI.
 
-## Recursos atuais — 0.1.2
+![Duas seções com seleção de timbre, ON/OFF e volume independente](docs/interface.png)
+
+## Recursos atuais — 0.2.0
 
 - Carregamento de `.npno` em segundo plano, sem conversão manual para WAV.
 - Mapeamento de teclas, transposição, ajuste fino e camadas de velocity.
-- Samples mono/estéreo, 128 vozes e sustain CC64.
-- Caminho do timbre salvo no estado do plugin.
+- Duas seções opcionais e independentes: Select Sound, ON/OFF e fader horizontal de volume em cada uma.
+- Samples mono/estéreo, 128 vozes por seção e sustain CC64.
+- Volumes e ON/OFF são parâmetros disponíveis para automação no host, com transições suavizadas.
+- Os dois caminhos de timbre, os volumes e ON/OFF são salvos no estado do plugin. Projetos antigos com um único timbre abrem na seção Sound 1.
 - Note-off com fade suave, sem disparar o sample extra de release que causava ruído no grand piano.
 - VST3 e aplicativo standalone para macOS, com interface mínima e teclado visual.
 
@@ -48,8 +52,11 @@ Para reutilizar uma cópia local do JUCE, defina `JUCE_PATH` antes de executar `
 cmake --build build --target NpnoSmoke --config Release -j 4
 build/NpnoSmoke_artefacts/Release/NpnoSmoke \
   "$PWD/build/NpnoPlayer_artefacts/Release/VST3/Vini Stage.vst3" \
-  "/caminho/para/piano.npno"
+  "/caminho/para/piano.npno" \
+  "/caminho/para/segundo-piano.npno"
 ```
+
+O segundo arquivo é opcional no comando de teste. Quando informado, o teste também verifica soma dos timbres, volumes independentes, ON/OFF, uso apenas da seção 2, arquivo ausente e salvamento/reabertura em uma nova instância.
 
 O teste de 88 teclas pressupõe um arquivo que cubra MIDI 21–108. Bibliotecas com outra extensão de teclado podem ter notas descobertas legítimas.
 
@@ -59,7 +66,8 @@ Se o CMake foi instalado pelo script, substitua `cmake` por `.build-tools/bin/cm
 
 - `Source/Plugin.cpp`: motor de reprodução, estado e interface.
 - `bridge/src/lib.rs`: leitor/decodificador Rust e interface C.
-- `Source/Smoke.cpp`: teste usando o VST3 compilado em um host.
+- `Source/Smoke.cpp` e `Source/LayerSmoke.cpp`: testes usando o VST3 compilado em um host.
+- `Source/Preview.cpp`: renderização do editor real do plugin para conferir o layout, sem abrir uma DAW.
 - `docs/USO.md`: instalação, funcionamento e limites musicais.
 
 ## Limites desta versão

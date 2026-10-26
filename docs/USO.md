@@ -1,4 +1,4 @@
-# Vini Stage 0.1.2 — versão de teste
+# Vini Stage 0.2.0 — versão de teste
 
 Instrumento VST3 com botão **Select Sound** para abrir um arquivo `.npno` diretamente. Os samples são decodificados em memória; não é necessário converter ou importar WAVs.
 
@@ -8,10 +8,11 @@ Instrumento VST3 com botão **Select Sound** para abrir um arquivo `.npno` diret
 2. Neste M4, as novas compilações já instalam o plugin automaticamente em `~/Library/Audio/Plug-Ins/VST3/`. Para instalar em outro Mac, copie **Vini Stage.vst3** para essa pasta ou execute `Instalar.command`.
 3. No Live 11, abra Preferences → Plug-Ins e habilite **Use VST3 Plug-In System Folders**. Use **Rescan** se necessário.
 4. Em Plug-Ins → VST3 → Vinizera, coloque **Vini Stage** em uma pista MIDI.
-5. Clique em **Select Sound**, escolha seu `.npno` e aguarde o nome do instrumento aparecer.
-6. Toque pelo teclado MIDI ou use o teclado visual. CC64 controla o sustain.
+5. Em **Sound 1** ou **Sound 2**, clique em **Select Sound**, escolha seu `.npno` e aguarde o nome aparecer. Basta carregar uma das seções; a segunda é opcional.
+6. Cada seção tem seu próprio botão **ON/OFF** e um fader horizontal **Volume** (0–100%). Os dois timbres recebem o mesmo MIDI e são somados na saída estéreo. Se a soma ficar alta, reduza os volumes.
+7. Toque pelo teclado MIDI ou use o teclado visual. CC64 controla o sustain.
 
-O arquivo `.npno` precisa permanecer no mesmo caminho para reabrir o projeto com o timbre. Se mudar o arquivo de lugar ou trocar de computador, selecione-o novamente. O plugin salva a referência ao arquivo; não inclui os samples no projeto.
+Os caminhos dos dois `.npno`, os volumes e ON/OFF são guardados no projeto do Ableton. Ao reabrir, o plugin recarrega os timbres automaticamente. Cada arquivo `.npno` precisa permanecer no mesmo caminho para reabrir o projeto com o timbre. Se mudar o arquivo de lugar ou trocar de computador, selecione-o novamente. O plugin salva a referência ao arquivo; não inclui os samples no projeto.
 
 ## Computadores
 
@@ -27,7 +28,7 @@ A declaração de versão mínima foi conferida no Mach-O. Não foi possível ex
 - Seleção de `.npno` por janela nativa do macOS.
 - Carregamento fora da thread de áudio, mantendo o timbre anterior em caso de erro.
 - Mapa de teclas do arquivo, transposição e ajuste fino por tecla.
-- Samples mono/estéreo, 128 vozes, velocity MIDI 1–127 e sustain CC64.
+- Samples mono/estéreo, 128 vozes por seção, velocity MIDI 1–127 e sustain CC64.
 - Seleção automática de camadas e gravações de ressonância quando disponíveis. Na versão 0.1.1, o note-off apenas reduz suavemente a voz que já toca; não dispara samples extras de release.
 - Caminho do timbre salvo no estado do plugin.
 
@@ -44,3 +45,7 @@ O código do projeto está no repositório Vini-Stage. Foi usada a revisão `293
 ## Correção 0.1.1
 
 Desativado o disparo de samples de release em cada note-off, que causava uma ressonância extra no Royal Grand 3D XL 6.1. A nota principal mantém a soltura suave de 90 ms; com CC64 acionado, continua até o pedal ser liberado ou a gravação chegar ao fim. A polifonia permanece em 128 vozes.
+
+## Versão 0.2.0
+
+Duas seções independentes e opcionais com seleção de arquivo, ON/OFF e volume horizontal. Desligar uma seção faz um fade curto sem afetar a outra; religar exige uma nova nota e não recupera notas antigas. O estado de ambas é salvo, inclusive se um arquivo ainda está carregando. Projetos antigos com um arquivo continuam abrindo na seção Sound 1.

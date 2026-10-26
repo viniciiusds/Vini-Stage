@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "")
-project(NpnoPlayer VERSION 0.1.2 LANGUAGES C CXX)
+project(NpnoPlayer VERSION 0.2.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 if(NOT DEFINED JUCE_PATH)
     message(FATAL_ERROR "Configure -DJUCE_PATH=/path/to/JUCE")
@@ -33,9 +33,14 @@ target_compile_definitions(NpnoPlayer PUBLIC JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 
 target_link_libraries(NpnoPlayer PRIVATE npno_bridge juce::juce_audio_utils juce::juce_recommended_config_flags)
 juce_add_console_app(NpnoSmoke PRODUCT_NAME "NPno Smoke")
 juce_generate_juce_header(NpnoSmoke)
-target_sources(NpnoSmoke PRIVATE Source/Smoke.cpp)
+target_sources(NpnoSmoke PRIVATE Source/Smoke.cpp Source/LayerSmoke.cpp)
 target_link_libraries(NpnoSmoke PRIVATE juce::juce_audio_utils juce::juce_recommended_config_flags)
 target_compile_definitions(NpnoSmoke PRIVATE JUCE_PLUGINHOST_VST3=1 JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+
+juce_add_console_app(NpnoPreview PRODUCT_NAME "Vini Stage UI Preview")
+juce_generate_juce_header(NpnoPreview)
+target_sources(NpnoPreview PRIVATE Source/Preview.cpp)
+target_link_libraries(NpnoPreview PRIVATE NpnoPlayer juce::juce_audio_utils juce::juce_recommended_config_flags)
 
 option(NPNO_INSTALL_AFTER_BUILD "Install the signed VST3 in the user plug-in folder" ON)
 if(APPLE AND NPNO_INSTALL_AFTER_BUILD)
