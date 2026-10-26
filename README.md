@@ -2,13 +2,13 @@
 
 Instrumento **Vini Stage**: um VST3 simples para carregar arquivos Nord `.npno` diretamente no Ableton Live 11. Clique em **Select A** ou **Select B**, escolha um arquivo e toque por MIDI.
 
-![Editor compilado com 88 teclas, logo em minúsculas e painel sem parafusos](docs/interface-keyboard-preview.png)
+![Editor compilado com 88 teclas, logo em minúsculas e painel sem parafusos](docs/interface-0.4.2.png)
 
-**Prévia de desenvolvimento aguardando aprovação:** teclado de 88 teclas (A0–C8), clicável e com destaque por MIDI, logo `vini stage` ao lado de Levels, sem parafusos, menor espaço superior e botões Select/Clear menores. A imagem é uma captura direta do editor compilado, com um acorde MIDI demonstrativo. O instalador publicado abaixo continua sendo o 0.4.1 anterior; nenhum novo `.pkg` foi gerado para esta prévia.
+Layout com teclado de **88 teclas (A0–C8)** na parte inferior, clicável com o mouse e com destaque das notas recebidas por MIDI. Logo `vini stage` ao lado de Levels, painel sem parafusos, botões Select/Clear menores e faders/LEDs alongados para cima, com margens iguais acima e abaixo dos LEDs. A imagem é uma captura direta do editor compilado, com um acorde MIDI demonstrativo.
 
 ## Instalador Universal `.pkg`
 
-**[Baixar Vini Stage 0.4.1 Universal.pkg](https://github.com/viniciiusds/Vini-Stage/releases/download/v0.4.1/Vini-Stage-0.4.1-Universal.pkg)** · [Todas as versões](https://github.com/viniciiusds/Vini-Stage/releases)
+**[Baixar Vini Stage 0.4.2 Universal.pkg](https://github.com/viniciiusds/Vini-Stage/releases/download/v0.4.2/Vini-Stage-0.4.2-Universal.pkg)** · [Todas as versões](https://github.com/viniciiusds/Vini-Stage/releases)
 
 O instalador contém o mesmo VST3 Universal para **Intel/High Sierra 10.13** e **Apple Silicon/M4**. Feche o Live, abra o `.pkg`, siga o assistente e informe a senha de administrador. Ele instala para todos os usuários em `/Library/Audio/Plug-Ins/VST3/Vini Stage.vst3`.
 
@@ -20,26 +20,26 @@ O pacote atual é de teste, **sem assinatura Developer ID Installer e sem notari
 
 ```bash
 bash package.sh
-python3 packaging/test_package.py dist/Vini-Stage-0.4.1-Universal.pkg
+python3 packaging/test_package.py dist/Vini-Stage-0.4.2-Universal.pkg
 ```
 
 O nome e a versão do `.pkg` são obtidos do VST3 compilado. Para assinar o pacote, defina `INSTALLER_SIGN_IDENTITY` com a identidade de um certificado **Developer ID Installer** disponível no chaveiro. Isso não faz a notarização automaticamente; o plugin e o pacote de distribuição ainda precisam do fluxo de assinatura e notarização apropriado.
 
-## Recursos atuais — 0.4.1
+## Recursos atuais — 0.4.2
 
 - Carregamento de `.npno` em segundo plano, com **Loading... X%** no visor e sem conversão manual para WAV. O percentual acompanha a leitura do arquivo e a decodificação das gravações.
 - Mapeamento de teclas, transposição, ajuste fino e camadas de velocity.
 - Dois timbres opcionais A/B em um único visor **Sounds**. Sem timbre, a linha fica apenas **A:** ou **B:** e não produz som.
 - **Select A/B** abre o arquivo; após a seleção, o mesmo botão passa a **Clear A/B**. Clear remove apenas aquele timbre. Para trocar, use Clear e depois Select. Também é possível cancelar um carregamento usando Clear.
-- Painel vermelho, área cinza única à esquerda com faders A/B, LEDs verdes à direita de cada fader e visor maior à direita com fonte reduzida. Sem botões ON/OFF e sem teclado visual.
+- Painel vermelho, área cinza única à esquerda com faders A/B, LEDs verdes à direita de cada fader e visor maior à direita com fonte reduzida. Sem botões ON/OFF; teclado visual de 88 teclas na parte inferior.
 - Visores em dB com a largura do conjunto fader + LEDs, botões Select/Clear alinhados sob o visor Sounds.
-- Faders e LEDs um pouco mais curtos, com margem de 20 px abaixo do visor mesmo no máximo (0 dB).
+- Faders e LEDs mais altos, com 20 px entre o visor em dB e o topo dos LEDs e 20 px entre a base dos LEDs e o separador acima de A/B.
 - Volume de −60 a 0 dB em passos de 1 dB, com posição adicional de silêncio (−∞). Visores em dB editáveis; máximo de 0 dB.
 - Samples mono/estéreo, 128 vozes por seção e sustain CC64.
 - Volumes automatizáveis, com transições suavizadas. Os parâmetros ON/OFF antigos continuam disponíveis no host para preservar automações e estados anteriores, mas não aparecem no painel. Selecionar um novo arquivo reativa essa camada; projetos antigos com OFF continuam respeitando esse estado.
 - Os dois caminhos de timbre, os volumes e ON/OFF são salvos no estado do plugin. Volumes de projetos anteriores são arredondados para o dB inteiro mais próximo, preservando os IDs dos parâmetros. Projetos antigos com um único timbre abrem na seção Sound 1.
 - Note-off com fade suave, sem disparar o sample extra de release que causava ruído no grand piano.
-- VST3 e aplicativo standalone para macOS, com entrada MIDI.
+- VST3 e aplicativo standalone para macOS, com entrada MIDI. O `.pkg` instala o VST3; o standalone é gerado na compilação.
 
 ## Compatibilidade
 
@@ -81,6 +81,8 @@ build/NpnoSmoke_artefacts/Release/NpnoSmoke \
   "/caminho/para/piano.npno" \
   "/caminho/para/segundo-piano.npno"
 ```
+
+A prévia compilada verifica as 88 teclas visíveis e o destaque por note-on/note-off em MIDI. A interação por clique usa o componente MidiKeyboardComponent do JUCE e precisa de conferência manual na janela nativa.
 
 O teste verifica também os passos de 1 dB, a atenuação medida no áudio, o teto de 0 dB, o mute em −∞ e a migração dos volumes de projetos antigos.
 

@@ -1,4 +1,4 @@
-# Vini Stage 0.4.1 — versão de teste
+# Vini Stage 0.4.2 — versão de teste
 
 Instrumento VST3 com botões **Select A** e **Select B** para abrir um arquivo `.npno` diretamente. Os samples são decodificados em memória; não é necessário converter ou importar WAVs.
 
@@ -21,9 +21,9 @@ Este pacote ainda não tem certificado Developer ID Installer nem notarização 
 5. Clique em **Select A** ou **Select B**, escolha seu `.npno` e acompanhe **A: Loading... X%** ou **B: Loading... X%** no visor Sounds até aparecer o nome. Basta carregar um timbre; o outro é opcional.
 6. Após selecionar um arquivo, o botão muda para **Clear A/B**. Clique para remover aquele timbre, inclusive durante o carregamento: a linha fica **A:** ou **B:** e o botão volta a Select. Para trocar de timbre, use Clear e depois Select.
 7. Cada timbre tem um fader de **−60 a 0 dB**, em passos de **1 dB**, mais a posição **−∞ dB** para silêncio. O visor permite digitar o valor; setas e roda do mouse alteram 1 dB, duplo clique retorna a 0 dB. Os LEDs à direita indicam o volume configurado, mesmo quando o espaço está vazio; não são medidores de áudio.
-8. Toque pelo teclado MIDI. Ambos os timbres recebem o mesmo MIDI e são somados na saída estéreo; reduza os volumes se necessário. CC64 controla o sustain.
+8. Toque pelo teclado MIDI ou clique nas 88 teclas (A0–C8) na parte inferior. As notas recebidas por MIDI ficam destacadas em vermelho e apagam ao soltar. Ambos os timbres recebem o mesmo MIDI e são somados na saída estéreo; reduza os volumes se necessário. CC64 controla o sustain.
 
-Não há ON/OFF nem teclado visual neste layout. Os parâmetros ON/OFF anteriores são preservados no host para compatibilidade com projetos/automação: um estado antigo OFF permanece silencioso. Selecionar um novo arquivo reativa a camada.
+Não há botões ON/OFF neste layout. Os parâmetros ON/OFF anteriores são preservados no host para compatibilidade com projetos/automação: um estado antigo OFF permanece silencioso. Selecionar um novo arquivo reativa a camada.
 Os caminhos dos dois `.npno`, os volumes e ON/OFF são guardados no projeto do Ableton. Ao reabrir, o plugin recarrega os timbres automaticamente. Cada arquivo `.npno` precisa permanecer no mesmo caminho para reabrir o projeto com o timbre. Se mudar o arquivo de lugar ou trocar de computador, selecione-o novamente. O plugin salva a referência ao arquivo; não inclui os samples no projeto.
 
 ## Computadores
@@ -81,3 +81,7 @@ Visor Sounds único com linhas A/B, painel cinza de volumes à esquerda e LEDs �
 ## Versão 0.4.1
 
 Topo do painel Levels alinhado ao topo do visor Sounds. Painel e faders 14 px mais curtos, mantendo a base e a margem entre os visores em dB e as alças.
+
+## Versão 0.4.2
+
+Retorno do teclado visual de 88 teclas, com clique e destaque de notas MIDI. Logo em minúsculas à esquerda de Levels, sem parafusos, menor margem superior e botões Select/Clear menores. Faders e LEDs alongados para cima, com margens de 20 px acima e abaixo dos LEDs e separadores sobre as letras A/B. Captura do editor compilado no README.

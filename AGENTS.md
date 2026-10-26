@@ -16,4 +16,4 @@
 
 - `package.sh` produces a legacy-compressed Universal PKG targeting macOS 10.13+, installing globally in `/Library/Audio/Plug-Ins/VST3/`. Keep its stable package identifier, non-relocatable/version-checked atomic bundle upgrade and safe per-user backup migration. Do not claim Developer ID signing, notarization or real High Sierra installation unless actually verified. Package tests must use isolated temporary roots and never run a real system installation without the user's explicit request.
 
-- Current keyboard/layout build awaits user approval. Do not generate or publish a new PKG/release until the user confirms.
+- The user approved the keyboard/layout and authorized packaging/publication as 0.4.2. Preserve the approved layout in future builds.
