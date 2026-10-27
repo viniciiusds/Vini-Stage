@@ -91,13 +91,13 @@ int testLayers(juce::AudioPluginFormatManager& manager,const juce::PluginDescrip
                 return result;
             };
             auto held=capture(false),released=capture(true);double maxError=0;
-            for(size_t frame=0;frame<held.size();++frame){double envelope=std::max(0.0,1.0-(double)frame/(48000.0*0.5));
+            for(size_t frame=0;frame<held.size();++frame){double envelope=std::max(0.0,1.0-(double)frame/(48000.0*0.09));
                 maxError=std::max(maxError,std::abs((double)released[frame]-held[frame]*envelope));}
-            require(maxError<5e-5,"Main release does not match 500 ms fade");
-            double after=0;for(size_t frame=25000;frame<released.size();++frame)after+=released[frame]*released[frame];
+            require(maxError<5e-5,"Main release does not match 90 ms fade");
+            double after=0;for(size_t frame=4500;frame<released.size();++frame)after+=released[frame]*released[frame];
             require(after<1e-12,"Main voice continues after release duration");
-            require(std::abs(released[8000])>1e-8,"Main voice still cuts at old 90 ms duration");
-            std::cout<<"PASS isolated main voice: 500 ms release envelope, audible beyond 90 ms, then silence\n";
+            require(std::abs(released[2000])>1e-8,"Main voice cuts before 90 ms duration");
+            std::cout<<"PASS isolated main voice: 90 ms release envelope, then silence\n";
         }
         controls(*plugin,true,false);auto a=render(*plugin);require(energy(a)>1e-6,"Sound 1 silent");
         controls(*plugin,false,true);auto b=render(*plugin);require(energy(b)>1e-6,"Sound 2 silent");

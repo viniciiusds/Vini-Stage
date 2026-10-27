@@ -49,7 +49,7 @@ public:
         if(!enabled&&!gain.isSmoothing()) voices.fill({});
     }
 private:
-    struct Voice {const NpView* recording=nullptr;double position=0,step=1;float level=0,envelope=1,releaseStep=0,tailGain=1,tailDecay=1,attackGain=1;int note=0,channel=1;bool down=false,releasing=false;uint64_t age=0;};
+    struct Voice {const NpView* recording=nullptr;double position=0,step=1;float strikeVelocity=1,level=0,envelope=1,releaseStep=0,tailGain=1,tailDecay=1,attackGain=1;int note=0,channel=1;bool down=false,releasing=false;uint64_t age=0;};
     std::array<Voice,128> voices{};
     std::array<bool,16> sustain{};
     std::unique_ptr<NpLibrary,decltype(&np_free)> library{nullptr,np_free};
@@ -107,9 +107,8 @@ private:
         if (root == 255) return nullptr;
         return Playback::choose(recordings,root,juce::roundToInt(velocity*127.0f),bank,layerExtents[(size_t)bank]);
     }
-    void start(int note, int channel, float velocity, int bank) {
-        // Release uses a fixed take and gain, independent of note-on velocity,
-        // Drive, hold duration, and the main voice's natural decay.
+    void start(int note, int channel, float velocity, int bank, float strikeVelocity=1.0f) {
+        // Keep a stable release take; scale it with the original note-on velocity.
         if(bank==2)velocity=1.0f;
         auto* recording=choose(note,velocity,bank);
         if (!recording && bank==1) recording=choose(note,velocity,0);
@@ -117,27 +116,28 @@ private:
         Voice* slot=nullptr;
         for (auto& v : voices) if (!v.recording) { slot=&v; break; }
         if (!slot) slot=&*std::min_element(voices.begin(), voices.end(), [](const Voice& a,const Voice& b){return a.age<b.age;});
-        *slot={}; slot->recording=recording; slot->note=note; slot->channel=channel; slot->down=bank!=2; slot->age=++counter;slot->attackGain=bank==2?0.0f:1.0f;
+        *slot={}; slot->strikeVelocity=strikeVelocity; slot->recording=recording; slot->note=note; slot->channel=channel; slot->down=bank!=2; slot->age=++counter;slot->attackGain=bank==2?0.0f:1.0f;
         const double fineSemitones=(double)np_fine(library.get(),(uint8_t)note)*0.7/100.0;
         slot->step=(double)np_rate()/rate*std::pow(2.0, ((double)note-recording->root+fineSemitones)/12.0);
         slot->tailDecay=Playback::hasLoop(*recording)?(float)std::pow((double)recording->loop_decay,slot->step):1.0f;
         // Quiet strikes need a quiet gain response, not the old 30% minimum.
-        slot->level=np_gain(library.get())*0.65f*(bank==2?Playback::releaseGain:Playback::velocityGain(velocity));
+        slot->level=np_gain(library.get())*0.65f*(bank==2?Playback::releaseGain*Playback::velocityGain(strikeVelocity):Playback::velocityGain(velocity));
     }
     void damp(Voice& voice){
         if(!voice.recording||voice.recording->bank==2||voice.releasing)return;
         const int note=voice.note,channel=voice.channel;
+        const float strikeVelocity=voice.strikeVelocity;
         release(voice);
         // One release per actual damping event; never on an unmatched note-off,
         // never while CC64 still holds the voice, and never from another release.
-        start(note,channel,1.0f,2);
+        start(note,channel,1.0f,2,strikeVelocity);
     }
     void handle(const juce::MidiMessage& m) {
         const auto ch=m.getChannel();
         if (ch<1 || ch>16) return;
         if (m.isNoteOn()) {
             for (auto& v:voices) if (v.recording && v.note==m.getNoteNumber() && v.channel==ch && v.down) { v.down=false; release(v); }
-            start(m.getNoteNumber(),ch,Playback::drivenVelocity(m.getFloatVelocity()),sustain[ch-1]?1:0);
+            start(m.getNoteNumber(),ch,Playback::drivenVelocity(m.getFloatVelocity()),sustain[ch-1]?1:0,m.getFloatVelocity());
         } else if (m.isNoteOff()) {
             for (auto& v:voices) if (v.recording && v.note==m.getNoteNumber() && v.channel==ch && v.down) {
                 v.down=false;

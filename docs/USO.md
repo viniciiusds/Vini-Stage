@@ -1,4 +1,4 @@
-# Vini Stage 0.5.3 — versão de teste
+# Vini Stage 0.5.4 — versão de teste
 
 Instrumento VST3 com botões **Select A** e **Select B** para abrir um arquivo `.npno` diretamente. Os samples são decodificados em memória; não é necessário converter ou importar WAVs.
 
@@ -109,3 +109,7 @@ Amplia a rampa de note-off de 90 para 500 ms, usando como referência o parâmet
 Reduz o ganho fixo do sample de release de 40% para 15%. Mantidos a independência de velocity, Drive, duração e cauda da nota, o comportamento de sustain e a rampa de 500 ms da voz principal.
 
 O logo `vini stage` mantém posição lateral e tipografia, com a base visível das letras alinhada à borda inferior do painel Levels.
+
+## Ajuste 0.5.4
+
+Release proporcional à velocity MIDI original (antes do Drive), com ganho máximo de 10% em velocity 127. Soltura da voz principal de 90 ms. O sustain preserva a velocity da nota até o abafamento.
