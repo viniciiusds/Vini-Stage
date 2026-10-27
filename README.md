@@ -4,7 +4,16 @@ VST3 e aplicativo standalone para carregar timbres Nord `.npno` diretamente e to
 
 ![Interface do editor compilado Vini Stage 0.6.0](docs/interface-0.6.0.png)
 
-**[Baixar Vini Stage 0.6.0 Universal.pkg — versão de teste](https://github.com/viniciiusds/Vini-Stage/releases/download/v0.6.0/Vini-Stage-0.6.0-Universal.pkg)** · [Todas as versões](https://github.com/viniciiusds/Vini-Stage/releases)
+**[Baixar Vini Stage 0.6.1 Universal.pkg — versão de teste](https://github.com/viniciiusds/Vini-Stage/releases/download/v0.6.1/Vini-Stage-0.6.1-Universal.pkg)** · [Todas as versões](https://github.com/viniciiusds/Vini-Stage/releases)
+
+## Instalador 0.6.1 — escolha os componentes
+
+Na etapa **Tipo de instalação**, há duas opções independentes, inicialmente marcadas:
+
+- **VST3** — instala ou atualiza `/Library/Audio/Plug-Ins/VST3/Vini Stage.vst3`.
+- **Standalone** — instala ou atualiza `/Applications/Vini Stage.app`, para tocar sem abrir o Ableton.
+
+Você pode selecionar uma ou ambas. Um componente desmarcado não é removido nem atualizado. Cada componente possui registro e verificação de versão próprios. Documentação e licenças são compartilhadas. A versão 0.6.1 mantém o motor de áudio da 0.6.0.
 
 ## Mudanças de áudio e carregamento — 0.6.0
 
@@ -25,15 +34,15 @@ No M4, a primeira carga medida sem cache de áudio do plugin ficou em aproximada
 
 ## Instalar e tocar
 
-1. Feche o Ableton e abra o `.pkg`.
-2. O instalador coloca **Vini Stage.vst3** em `/Library/Audio/Plug-Ins/VST3/`, disponível para todos os usuários. Informe a senha de administrador quando o instalador solicitar.
-3. No Live 11, habilite **Use VST3 Plug-In System Folders**, faça Rescan se necessário e abra **VST3 → Vinizera → Vini Stage** em uma pista MIDI.
+1. Feche o Ableton e o Vini Stage standalone e abra o `.pkg`.
+2. Marque **VST3**, **Standalone** ou ambos. O plugin vai para a pasta global de VST3 e o aplicativo para `/Applications/`. Informe a senha de administrador quando o instalador solicitar.
+3. Para o standalone, abra **Aplicativos → Vini Stage**. Para o VST3 no Live 11, habilite **Use VST3 Plug-In System Folders**, faça Rescan se necessário e abra **VST3 → Vinizera → Vini Stage** em uma pista MIDI.
 4. Clique em **Select A** ou **Select B**, escolha um `.npno` e aguarde **Loading... X%**. Só um timbre é suficiente.
 5. Para remover, clique em **Clear A/B**. Para trocar, remova e selecione outro arquivo.
 
-O mesmo PKG contém **x86_64 com mínimo macOS 10.13** e **arm64 com mínimo 11.0**. A instalação do VST3 substitui versões anteriores no destino global. Uma cópia igual ou mais antiga da pasta VST3 do usuário é guardada em `~/Library/Application Support/Vini Stage/Plugin Backups/` para evitar duplicidade; versões mais novas e plugins com outra identidade são preservados. Timbres e projetos não são alterados.
+O mesmo PKG contém **x86_64 com mínimo macOS 10.13** e **arm64 com mínimo 11.0**. Cada componente selecionado atualiza sua versão anterior no destino fixo. A instalação do VST3 substitui versões anteriores no destino global. Uma cópia igual ou mais antiga da pasta VST3 do usuário é guardada em `~/Library/Application Support/Vini Stage/Plugin Backups/` para evitar duplicidade; versões mais novas e plugins com outra identidade são preservados. Timbres e projetos não são alterados.
 
-O PKG é de teste, sem assinatura Developer ID Installer e sem notarização Apple. Builds anteriores foram confirmados pelo usuário no High Sierra com Arturia; a nova versão ainda requer audição naquele Mac. O PKG contém o VST3, não o standalone nem bibliotecas de timbres.
+O PKG é de teste, sem assinatura Developer ID Installer e sem notarização Apple. Builds anteriores foram confirmados pelo usuário no High Sierra com Arturia; a nova versão ainda requer audição naquele Mac. O PKG contém VST3 e standalone selecionáveis, sem bibliotecas de timbres.
 
 ## Controles e projetos
 
@@ -56,7 +65,7 @@ O build instala o VST3 assinado ad-hoc em `~/Library/Audio/Plug-Ins/VST3/`. O st
 
 ```bash
 bash package.sh
-python3 packaging/test_package.py dist/Vini-Stage-0.6.0-Universal.pkg
+python3 packaging/test_package.py dist/Vini-Stage-0.6.1-Universal.pkg
 ```
 
 Os testes de pacote usam diretórios temporários e não executam instalação real. Para Developer ID Installer, `package.sh` aceita `INSTALLER_SIGN_IDENTITY`; notarização exige um fluxo adicional.
