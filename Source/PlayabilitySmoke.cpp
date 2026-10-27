@@ -89,13 +89,13 @@ int testPlayability(juce::AudioPluginInstance& plugin,const juce::String& path,c
         require(rms(render.render(10),render.rate,8,9)>1e-16,"Physically held note cuts at sample end");
         std::cout<<"PASS pedal after note-on and held key use the embedded loop\n";
         // Compare actual release audio, after the main voice's 90 ms fade, against
-        // decoded release PCM at exactly half of the initiating voice's gain.
+        // decoded release PCM at a fixed 40% gain, independent of the main voice.
         render.reset();render.event(juce::MidiMessage::noteOn(1,60,(juce::uint8)127));render.render(0.25);
         render.event(juce::MidiMessage::noteOff(1,60));auto release=render.render(3);
         const auto* take=Playback::choose(recordings,np_root(library.get(),60),127,2,extents[2]);
         require(take!=nullptr,"Royal release sample missing");
         const double step=(double)np_rate()/render.rate*std::pow(2.0,((double)60-take->root+(double)np_fine(library.get(),60)*0.7/100)/12);
-        const float level=np_gain(library.get())*0.65f*0.50f;double maxError=0;double position=0;
+        const float level=np_gain(library.get())*0.65f*0.40f;double maxError=0;double position=0;
         for(size_t f=0;f<(size_t)(0.4*render.rate);++f){if(f>(size_t)(0.2*render.rate)){
             size_t a=(size_t)position,b=std::min(a+1,take->frames-1);const float fraction=(float)(position-a);
             for(size_t c=0;c<2;++c){size_t channel=std::min(c,(size_t)take->channels-1);
@@ -103,12 +103,25 @@ int testPlayability(juce::AudioPluginInstance& plugin,const juce::String& path,c
                 maxError=std::max(maxError,std::abs((double)release[f*2+c]-expected));}}
             position+=step;
         }
-        require(maxError<1e-6,"Release audio is not calibrated to 50 percent");
+        require(maxError<1e-6,"Release audio is not calibrated to fixed 40 percent");
         require(rms(release,render.rate,0.2,0.4)>1e-7,"Note-off release sample silent");
         render.event(juce::MidiMessage::noteOff(1,60));render.event(juce::MidiMessage::controllerEvent(1,64,0));
         require(rms(render.render(1),render.rate,0,1)<1e-12,"Unmatched note-off or repeated pedal-up retriggers release");
-        wav(output.getChildFile("Royal-release-50-percent.wav"),release,render.rate);
-        std::cout<<"PASS measured release sample at 50 percent, no unmatched/repeated retrigger\n";
+        wav(output.getChildFile("Royal-release-40-percent-fixed.wav"),release,render.rate);
+        std::cout<<"PASS measured release sample at fixed 40 percent, no unmatched/repeated retrigger\n";
+        for(int velocity:{16,64,127})for(double heldSeconds:{0.25,6.5}){
+            render.reset();render.event(juce::MidiMessage::noteOn(1,60,(juce::uint8)velocity));render.render(heldSeconds);
+            render.event(juce::MidiMessage::noteOff(1,60));auto actual=render.render(1.8);
+            for(size_t i=(size_t)(0.2*render.rate)*2;i<(size_t)(0.4*render.rate)*2;++i)
+                require(std::abs(actual[i]-release[i])<1e-6f,"Release gain or sample changes with velocity/hold duration");
+        }
+        render.reset();render.event(juce::MidiMessage::controllerEvent(1,64,127));
+        render.event(juce::MidiMessage::noteOn(1,60,(juce::uint8)16));render.render(0.25);
+        render.event(juce::MidiMessage::noteOff(1,60));render.render(6.5);
+        render.event(juce::MidiMessage::controllerEvent(1,64,0));auto pedalRelease=render.render(1.8);
+        for(size_t i=(size_t)(0.2*render.rate)*2;i<(size_t)(0.4*render.rate)*2;++i)
+            require(std::abs(pedalRelease[i]-release[i])<1e-6f,"Release gain changes with sustain duration");
+        std::cout<<"PASS identical fixed release for velocities 16/64/127, short/long notes and delayed pedal release\n";
         // A note-off while pedal is down must have no audible release insertion.
         auto pedalRun=[&](bool sendNoteOff){render.reset();render.event(juce::MidiMessage::controllerEvent(1,64,127));render.event(juce::MidiMessage::noteOn(1,60,(juce::uint8)100));render.render(0.25);
             if(sendNoteOff)render.event(juce::MidiMessage::noteOff(1,60));return render.render(0.5);};

@@ -95,3 +95,7 @@ Correção do arraste dos faders A/B: a alça mantém o ponto onde foi segurada 
 Corrige o corte na chegada ao fim da gravação: usa o início e o comprimento de loop do arquivo, validados contra os limites da gravação, para a cauda de notas seguradas ou com sustain. O decaimento continua ao repetir, sem manter um som constante indefinidamente. O note-off sob sustain não inicia release; o sample de release toca ao abafar a nota, a 50% do ganho relativo à voz original, respeitando a atenuação já acumulada.
 
 Drive padrão interno −0,50; a implementação própria usa x² e não é uma cópia da curva do Ableton. Para comparar, comece com o efeito Velocity do Live neutro e depois faça o ajuste fino. Mantidos o layout, os IDs de parâmetros e os caminhos salvos. O teste de 14 segundos no Royal passou; a confirmação no MacBook High Sierra com Arturia ainda depende de audição do usuário.
+
+## Correção posterior ao instalador 0.5.0 — release fixo
+
+Na compilação atual da main, o sample de release usa 40% de ganho fixo e uma gravação fixa por nota. Esse nível não acompanha a intensidade da nota, o Drive, o tempo segurado ou o decaimento da voz principal. O fader da camada continua controlando a saída total. Mantidos o adiamento por sustain e o bloqueio de disparos repetidos. O instalador público 0.5.0 ainda usa 50% relativo.

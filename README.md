@@ -8,6 +8,8 @@ Layout com teclado de **88 teclas (A0–C8)** na parte inferior, clicável com o
 
 **Correção de arraste incluída no instalador 0.4.3:** os faders preservam o ponto onde a alça foi segurada e atualizam volume, LEDs e visor durante o movimento, antes de soltar o mouse. O teste do editor envia três posições de arraste para cada fader e confere as alterações de parâmetro antes do mouse-up. Duplo clique continua retornando a 0 dB.
 
+**Correção na `main`, posterior ao instalador 0.5.0:** release em **40% fixos**, sem acompanhar velocity, Drive, duração da nota ou decaimento da voz principal. A gravação de release escolhida também é fixa por nota. O fader A/B continua controlando a saída da camada, e o sustain continua adiando o release até abafar a nota. O `.pkg` 0.5.0 publicado abaixo ainda usa o comportamento anterior de 50% relativo.
+
 ## Versão 0.5.0 em teste — sustain, dinâmica e release
 
 - Caudas sustentadas usam os pontos de loop do `.npno`, com limites validados e decaimento após entrar na região de repetição. O player não encerra a voz simplesmente por chegar ao fim da gravação.
