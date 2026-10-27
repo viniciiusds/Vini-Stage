@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "")
-project(NpnoPlayer VERSION 0.5.4 LANGUAGES C CXX)
+project(NpnoPlayer VERSION 0.5.5 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 if(NOT DEFINED JUCE_PATH)
     message(FATAL_ERROR "Configure -DJUCE_PATH=/path/to/JUCE")

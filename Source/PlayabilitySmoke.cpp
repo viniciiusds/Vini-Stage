@@ -89,13 +89,13 @@ int testPlayability(juce::AudioPluginInstance& plugin,const juce::String& path,c
         require(rms(render.render(10),render.rate,8,9)>1e-16,"Physically held note cuts at sample end");
         std::cout<<"PASS pedal after note-on and held key use the embedded loop\n";
         // Compare actual release audio, after the main voice's 90 ms fade, against
-        // decoded release PCM at a maximum 10% gain, independent of the main voice.
+        // decoded release PCM at a maximum 5% gain, independent of the main voice.
         render.reset();render.event(juce::MidiMessage::noteOn(1,60,(juce::uint8)127));render.render(0.25);
         render.event(juce::MidiMessage::noteOff(1,60));auto release=render.render(3);
         const auto* take=Playback::choose(recordings,np_root(library.get(),60),127,2,extents[2]);
         require(take!=nullptr,"Royal release sample missing");
         const double step=(double)np_rate()/render.rate*std::pow(2.0,((double)60-take->root+(double)np_fine(library.get(),60)*0.7/100)/12);
-        const float level=np_gain(library.get())*0.65f*0.10f;double maxError=0;double position=0;
+        const float level=np_gain(library.get())*0.65f*0.05f;double maxError=0;double position=0;
         for(size_t f=0;f<(size_t)(0.95*render.rate);++f){if(f>(size_t)(0.65*render.rate)){
             size_t a=(size_t)position,b=std::min(a+1,take->frames-1);const float fraction=(float)(position-a);
             for(size_t c=0;c<2;++c){size_t channel=std::min(c,(size_t)take->channels-1);
@@ -103,13 +103,13 @@ int testPlayability(juce::AudioPluginInstance& plugin,const juce::String& path,c
                 maxError=std::max(maxError,std::abs((double)release[f*2+c]-expected));}}
             position+=step;
         }
-        require(maxError<1e-6,"Release audio is not calibrated to maximum 10 percent");
+        require(maxError<1e-6,"Release audio is not calibrated to maximum 5 percent");
         require(rms(release,render.rate,0.65,0.95)>1e-7,"Note-off release sample silent");
         render.event(juce::MidiMessage::noteOff(1,60));render.event(juce::MidiMessage::controllerEvent(1,64,0));
         require(rms(render.render(1),render.rate,0,1)<1e-12,"Unmatched note-off or repeated pedal-up retriggers release");
-        wav(output.getChildFile("Royal-release-10-percent-velocity.wav"),release,render.rate);
-        std::cout<<"PASS measured release sample at maximum 10 percent, no unmatched/repeated retrigger\n";
-        for(int velocity:{16,64,127})for(double heldSeconds:{0.25,6.5}){
+        wav(output.getChildFile("Royal-release-5-percent-velocity.wav"),release,render.rate);
+        std::cout<<"PASS measured release sample at maximum 5 percent, no unmatched/repeated retrigger\n";
+        for(int velocity:{16,50,64,127})for(double heldSeconds:{0.25,6.5}){
             render.reset();render.event(juce::MidiMessage::noteOn(1,60,(juce::uint8)velocity));render.render(heldSeconds);
             render.event(juce::MidiMessage::noteOff(1,60));auto actual=render.render(1.8);
             for(size_t i=(size_t)(0.65*render.rate)*2;i<(size_t)(0.95*render.rate)*2;++i)
@@ -121,13 +121,13 @@ int testPlayability(juce::AudioPluginInstance& plugin,const juce::String& path,c
         render.event(juce::MidiMessage::controllerEvent(1,64,0));auto pedalRelease=render.render(1.8);
         for(size_t i=(size_t)(0.65*render.rate)*2;i<(size_t)(0.95*render.rate)*2;++i)
             require(std::abs(pedalRelease[i]-release[i]*(16.0f/127.0f))<1e-6f,"Release gain changes with sustain duration");
-        std::cout<<"PASS proportional release for velocities 16/64/127, short/long notes and delayed pedal release\n";
+        std::cout<<"PASS proportional release for velocities 16/50/64/127, short/long notes and delayed pedal release\n";
         // A note-off while pedal is down must have no audible release insertion.
         auto pedalRun=[&](bool sendNoteOff){render.reset();render.event(juce::MidiMessage::controllerEvent(1,64,127));render.event(juce::MidiMessage::noteOn(1,60,(juce::uint8)100));render.render(0.25);
             if(sendNoteOff)render.event(juce::MidiMessage::noteOff(1,60));return render.render(0.5);};
         auto held=pedalRun(false),pedalled=pedalRun(true);require(held==pedalled,"Release sample fires while sustain is held");
         std::vector<float> dynamics;double weak=0,medium=0,strong=0;
-        for(int velocity:{16,64,127}){render.reset();render.event(juce::MidiMessage::noteOn(1,60,(juce::uint8)velocity));auto attack=render.render(0.8);
+        for(int velocity:{16,50,64,127}){render.reset();render.event(juce::MidiMessage::noteOn(1,60,(juce::uint8)velocity));auto attack=render.render(0.8);
             const double value=rms(attack,render.rate,0,0.25);if(velocity==16)weak=value;else if(velocity==64)medium=value;else strong=value;
             append(dynamics,attack);render.event(juce::MidiMessage::noteOff(1,60));append(dynamics,render.render(1.8));}
         require(weak>0&&weak<strong*0.05&&medium<strong*0.5&&weak<medium,"Quiet notes are too loud for default softer curve");
