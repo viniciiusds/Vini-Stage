@@ -1,4 +1,4 @@
-# Vini Stage 0.5.5 — versão de teste
+# Vini Stage 0.5.6 — versão de teste
 
 Instrumento VST3 com botões **Select A** e **Select B** para abrir um arquivo `.npno` diretamente. Os samples são decodificados em memória; não é necessário converter ou importar WAVs.
 
@@ -41,12 +41,12 @@ A declaração de versão mínima foi conferida no Mach-O. O usuário confirmou 
 - Carregamento fora da thread de áudio, mantendo o timbre anterior em caso de erro.
 - Mapa de teclas do arquivo, transposição e ajuste fino por tecla.
 - Samples mono/estéreo, 128 vozes por seção, velocity MIDI 1–127 e sustain CC64.
-- Seleção automática de camadas e gravações de ressonância quando disponíveis. Na versão 0.5.3, o release toca em 15% de ganho fixo, independente da velocity e da cauda da voz principal, com suavização e respeitando o pedal.
+- Seleção automática de camadas e gravações de ressonância quando disponíveis. Na versão 0.5.6, o release acompanha a velocity original, com ganho máximo de 2%, independente da cauda da voz principal, com suavização e respeitando o pedal.
 - Caminho do timbre salvo no estado do plugin.
 
 ## Limites musicais atuais
 
-Esta é uma implementação inicial própria, não uma reprodução exata do teclado Nord ou do Sharp. Usa curva própria de Drive −0,50 (x²) e valores de camada na escala da biblioteca; os pontos de troca e a resposta exata ainda não foram calibrados com o instrumento original. Loops válidos prolongam as caudas com decaimento, e a voz principal mantém soltura de 500 ms acompanhada do sample de release a 15% fixos. O envelope original completo, meio-pedal e ressonância por modelagem ainda não foram implementados. O nível bruto dos samples é preservado; o campo de trim não é aplicado porque a interpretação disponível deixou agudos praticamente inaudíveis no Clavinet testado.
+Esta é uma implementação inicial própria, não uma reprodução exata do teclado Nord ou do Sharp. Usa curva própria de Drive −0,50 (x²) e valores de camada na escala da biblioteca; os pontos de troca e a resposta exata ainda não foram calibrados com o instrumento original. Loops válidos prolongam as caudas com decaimento, e a voz principal mantém soltura de 90 ms acompanhada do sample de release proporcional à velocity, com máximo de 2%. O envelope original completo, meio-pedal e ressonância por modelagem ainda não foram implementados. O nível bruto dos samples é preservado; o campo de trim não é aplicado porque a interpretação disponível deixou agudos praticamente inaudíveis no Clavinet testado.
 
 Foi validado **Clavinet D6 6.1.npno**, stream `0x0464`: 38 gravações, 17 notas-raiz. As 88 teclas de 21 a 108 responderam em cinco velocities (440 combinações), com áudio finito e não silencioso. Note-off e sustain passaram. Isso não garante suporte a todas as bibliotecas `.npno`.
 
@@ -117,3 +117,7 @@ Release proporcional à velocity MIDI original (antes do Drive), com ganho máxi
 ## Ajuste 0.5.5
 
 Ganho do sample de release reduzido pela metade: máximo de 5% em velocity 127, proporcional à velocity recebida. Em velocity 50, o ganho é aproximadamente 1,97%. Soltura principal mantida em 90 ms, aprovada no teste do usuário.
+
+## Ajuste 0.5.6
+
+Sample de release reduzido para máximo de 2% em velocity 127, mantendo resposta proporcional à velocity recebida. Em velocity 50, aproximadamente 0,79%. Soltura principal mantida em 90 ms.
