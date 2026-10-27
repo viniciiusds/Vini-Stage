@@ -3,6 +3,8 @@
 
 int testLayers(juce::AudioPluginFormatManager&,const juce::PluginDescription&,const juce::String&,const juce::String&);
 
+int testPlayability(juce::AudioPluginInstance&,const juce::String&,const juce::File&);
+
 int main(int argc,char** argv) {
     juce::ScopedJuceInitialiser_GUI init;
     if(argc<3) {std::cerr<<"Usage: NpnoSmoke plugin.vst3 sound.npno\n";return 1;}
@@ -38,6 +40,8 @@ int main(int argc,char** argv) {
         plugin->processBlock(buffer,midi); juce::Thread::sleep(50);
     }
     if(!loaded){std::cerr<<"Sample loading timed out\n";return 4;}
+    if(argc>=5&&juce::String(argv[3])=="--playability")
+        return testPlayability(*plugin,juce::File(argv[2]).getFullPathName(),juce::File(argv[4]));
     int tests=0;
     for(int note=21;note<=108;++note) for(int velocity: {1,32,64,96,127}) {
         midi.addEvent(juce::MidiMessage::allSoundOff(1),0);
@@ -54,7 +58,7 @@ int main(int argc,char** argv) {
     midi.addEvent(juce::MidiMessage::allSoundOff(1),0);
     midi.addEvent(juce::MidiMessage::noteOn(1,60,(juce::uint8)100),0);
     renderEnergy(20);
-    midi.addEvent(juce::MidiMessage::noteOff(1,60),0);renderEnergy(30);
+    midi.addEvent(juce::MidiMessage::noteOff(1,60),0);renderEnergy(400);
     if(renderEnergy(5)>1e-12){std::cerr<<"Note-off did not silence the voice\n";return 7;}
     std::cout<<"PASS note-off release\n";
     midi.addEvent(juce::MidiMessage::noteOff(1,60),0);
@@ -62,12 +66,12 @@ int main(int argc,char** argv) {
     std::cout<<"PASS repeated note-off does not start a new voice\n";
     midi.addEvent(juce::MidiMessage::controllerEvent(1,64,127),0);
     midi.addEvent(juce::MidiMessage::noteOn(1,60,(juce::uint8)100),0);renderEnergy(20);
-    midi.addEvent(juce::MidiMessage::noteOff(1,60),0);renderEnergy(30);
+    midi.addEvent(juce::MidiMessage::noteOff(1,60),0);renderEnergy(400);
     if(renderEnergy(5)<1e-9){std::cerr<<"Sustain did not hold the voice\n";return 8;}
-    midi.addEvent(juce::MidiMessage::controllerEvent(1,64,0),0);renderEnergy(30);
+    midi.addEvent(juce::MidiMessage::controllerEvent(1,64,0),0);renderEnergy(400);
     if(renderEnergy(5)>1e-12){std::cerr<<"Sustain release did not silence the voice\n";return 9;}
     std::cout<<"PASS sustain hold and release\n";
     plugin->releaseResources();
     std::cout<<"PASS "<<tests<<" note/velocity combinations; state restored from .npno path\n";
-    if(argc>=4) return testLayers(manager,*descriptions[0],juce::File(argv[2]).getFullPathName(),juce::File(argv[3]).getFullPathName());
+    if(argc>=4) {plugin.reset();return testLayers(manager,*descriptions[0],juce::File(argv[2]).getFullPathName(),juce::File(argv[3]).getFullPathName());}
 }

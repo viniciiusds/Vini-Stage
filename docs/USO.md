@@ -1,4 +1,4 @@
-# Vini Stage 0.4.3 — versão de teste
+# Vini Stage 0.5.0 — versão de teste
 
 Instrumento VST3 com botões **Select A** e **Select B** para abrir um arquivo `.npno` diretamente. Os samples são decodificados em memória; não é necessário converter ou importar WAVs.
 
@@ -33,7 +33,7 @@ O mesmo pacote contém duas arquiteturas:
 - **Intel x86_64:** compilado com mínimo macOS **10.13**, para teste no MacBook Pro 2011.
 - **Apple Silicon arm64:** mínimo macOS **11.0**, executado e testado neste M4.
 
-A declaração de versão mínima foi conferida no Mach-O. Não foi possível executar o pacote no High Sierra nesta máquina; a compatibilidade real com esse sistema precisa ser confirmada no Mac de 2011. A interface e a integração com o Ableton também precisam do teste manual: o controle de aplicativos não estava autorizado nesta sessão. O teste automatizado usou um host VST3 JUCE e o plugin compilado.
+A declaração de versão mínima foi conferida no Mach-O. O usuário confirmou o funcionamento da versão anterior no MacBook High Sierra com controlador Arturia. Esta nova versão de áudio precisa de audição nesse conjunto. Os testes automatizados usam um host VST3 JUCE no M4 e não substituem a conferência no Ableton/Arturia.
 
 ## O que funciona nesta versão
 
@@ -41,12 +41,12 @@ A declaração de versão mínima foi conferida no Mach-O. Não foi possível ex
 - Carregamento fora da thread de áudio, mantendo o timbre anterior em caso de erro.
 - Mapa de teclas do arquivo, transposição e ajuste fino por tecla.
 - Samples mono/estéreo, 128 vozes por seção, velocity MIDI 1–127 e sustain CC64.
-- Seleção automática de camadas e gravações de ressonância quando disponíveis. Na versão 0.1.1, o note-off apenas reduz suavemente a voz que já toca; não dispara samples extras de release.
+- Seleção automática de camadas e gravações de ressonância quando disponíveis. Na versão 0.5.0, o release volta a tocar a 50% de ganho relativo à voz disparadora, com suavização e respeitando o pedal.
 - Caminho do timbre salvo no estado do plugin.
 
 ## Limites musicais atuais
 
-Esta é uma implementação inicial própria, não uma reprodução exata do teclado Nord ou do Sharp. As camadas são ordenadas por suavidade e distribuídas pela faixa de velocity; os pontos de troca exatos ainda não foram validados com o instrumento original. Usa release de 90 ms e toca as gravações até o fim: loops, curva exata de dinâmica, coeficientes de decay, meio-pedal e ressonância por modelagem ainda não foram implementados. O nível bruto dos samples é preservado; o campo de trim não é aplicado porque a interpretação disponível deixou agudos praticamente inaudíveis no Clavinet testado.
+Esta é uma implementação inicial própria, não uma reprodução exata do teclado Nord ou do Sharp. Usa curva própria de Drive −0,50 (x²) e valores de camada na escala da biblioteca; os pontos de troca e a resposta exata ainda não foram calibrados com o instrumento original. Loops válidos prolongam as caudas com decaimento, e a voz principal mantém soltura de 90 ms acompanhada do sample de release a 50%. O envelope original completo, meio-pedal e ressonância por modelagem ainda não foram implementados. O nível bruto dos samples é preservado; o campo de trim não é aplicado porque a interpretação disponível deixou agudos praticamente inaudíveis no Clavinet testado.
 
 Foi validado **Clavinet D6 6.1.npno**, stream `0x0464`: 38 gravações, 17 notas-raiz. As 88 teclas de 21 a 108 responderam em cinco velocities (440 combinações), com áudio finito e não silencioso. Note-off e sustain passaram. Isso não garante suporte a todas as bibliotecas `.npno`.
 
@@ -89,3 +89,9 @@ Retorno do teclado visual de 88 teclas, com clique e destaque de notas MIDI. Log
 ## Versão 0.4.3
 
 Correção do arraste dos faders A/B: a alça mantém o ponto onde foi segurada e atualiza volume, LEDs e visor em cada passo de 1 dB durante o movimento, antes de soltar o mouse. Preservados o duplo clique para 0 dB e os gestos de automação do host.
+
+## Versão 0.5.0 — audição de teste
+
+Corrige o corte na chegada ao fim da gravação: usa o início e o comprimento de loop do arquivo, validados contra os limites da gravação, para a cauda de notas seguradas ou com sustain. O decaimento continua ao repetir, sem manter um som constante indefinidamente. O note-off sob sustain não inicia release; o sample de release toca ao abafar a nota, a 50% do ganho relativo à voz original, respeitando a atenuação já acumulada.
+
+Drive padrão interno −0,50; a implementação própria usa x² e não é uma cópia da curva do Ableton. Para comparar, comece com o efeito Velocity do Live neutro e depois faça o ajuste fino. Mantidos o layout, os IDs de parâmetros e os caminhos salvos. O teste de 14 segundos no Royal passou; a confirmação no MacBook High Sierra com Arturia ainda depende de audição do usuário.

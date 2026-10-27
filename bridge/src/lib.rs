@@ -25,7 +25,17 @@ impl Seek for ProgressReader<'_>{
     fn seek(&mut self,from:SeekFrom)->std::io::Result<u64>{self.position=self.inner.seek(from)?;Ok(self.position)}
 }
 
-struct Recording { root: u8, bank: u8, layer: u8, channels: u16, frames: usize, pcm: Vec<f32> }
+struct Recording { root: u8, bank: u8, layer: u8, channels: u16, frames: usize, pcm: Vec<f32>, loop_start:usize, loop_end:usize, loop_decay:f32 }
+// Vendor records locate a repeat using a start frame plus its length. The next
+// marks bracket the decoder block containing the start. Reject inconsistent data.
+fn loop_info(record:&[u8;118],bank:u8,frames:usize)->(usize,usize,f32){
+    let word=|at|u32::from_be_bytes(record[at..at+4].try_into().unwrap()) as usize;
+    let start=word(0x1c);let length=word(0x20);let block_start=word(0x24);let block_end=word(0x28);
+    let end=start.checked_add(length).unwrap_or(usize::MAX);
+    if bank>1||start==0||length<64||end>frames||block_start>start||start>=block_end||block_end>frames{return (0,0,1.0);}
+    let decay=word(0x2e) as f64 / 8_388_608.0;
+    (start,end,if decay>0.0&&decay<=1.0{decay as f32}else{1.0})
+}
 pub struct Library { name: std::ffi::CString, keys: [u8; 128], fine: [i8; 128], recordings: Vec<Recording>, gain: f32, damper: u8 }
 fn load(path: &str,progress:&mut Progress) -> Result<Library, Box<dyn std::error::Error>> {
     let file=File::open(path)?;let total=file.metadata()?.len();
@@ -48,7 +58,8 @@ fn load(path: &str,progress:&mut Progress) -> Result<Library, Box<dyn std::error
         // is not validated for this Clavinet (values reach 147); treating it as
         // whole dB makes the upper keyboard inaudible.
         let gain = 1.0;
-        out.recordings.push(Recording { root: stroke.root, bank: stroke.bank_code(), layer: stroke.layer(), channels: lib.channels(), frames: audio.frames(), pcm: audio.interleaved().into_iter().map(|s| s as f32 / 32768.0 * gain).collect() });
+        let (loop_start,loop_end,loop_decay)=loop_info(stroke.record(),stroke.bank_code(),audio.frames());
+        out.recordings.push(Recording { root: stroke.root, bank: stroke.bank_code(), layer: stroke.layer(), channels: lib.channels(), frames: audio.frames(), loop_start, loop_end, loop_decay, pcm: audio.interleaved().into_iter().map(|s| s as f32 / 32768.0 * gain).collect() });
         decoded+=stroke.audio().len() as u64;
         progress.report(25+(decoded*74/total_audio) as u32);
     }
@@ -86,8 +97,30 @@ pub unsafe extern "C" fn np_load_with_progress(path:*const c_char,error:*mut c_c
 #[no_mangle] pub unsafe extern "C" fn np_gain(p: *const Library) -> f32 { (*p).gain }
 #[no_mangle] pub unsafe extern "C" fn np_damper(p: *const Library) -> u8 { (*p).damper }
 #[no_mangle] pub extern "C" fn np_rate() -> u32 { codec::RATE }
-#[repr(C)] pub struct View { pub data: *const f32, pub frames: usize, pub channels: u16, pub root: u8, pub bank: u8, pub layer: u8 }
+#[repr(C)] pub struct View { pub data: *const f32, pub frames: usize, pub channels: u16, pub root: u8, pub bank: u8, pub layer: u8, pub loop_start:usize, pub loop_end:usize, pub loop_decay:f32 }
 #[no_mangle] pub unsafe extern "C" fn np_recording(p: *const Library, index: usize, out: *mut View) -> bool {
     if p.is_null() || out.is_null() { return false; }
-    if let Some(r) = (&(*p).recordings).get(index) { *out = View { data: r.pcm.as_ptr(), frames: r.frames, channels: r.channels, root: r.root, bank: r.bank, layer: r.layer }; true } else { false }
+    if let Some(r) = (&(*p).recordings).get(index) { *out = View { data: r.pcm.as_ptr(), frames: r.frames, channels: r.channels, root: r.root, bank: r.bank, layer: r.layer, loop_start:r.loop_start, loop_end:r.loop_end, loop_decay:r.loop_decay }; true } else { false }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::loop_info;
+    fn record()->[u8;118]{
+        let mut result=[0;118];
+        for (offset,value) in [(0x1c,1000u32),(0x20,2000),(0x24,900),(0x28,1100),(0x2e,8_388_423)]{
+            result[offset..offset+4].copy_from_slice(&value.to_be_bytes());
+        }result
+    }
+    #[test]fn loop_uses_start_plus_length_and_q23_decay(){
+        let (start,end,decay)=loop_info(&record(),1,3500);
+        assert_eq!((start,end),(1000,3000));assert!(decay>0.999&&decay<1.0);
+    }
+    #[test]fn release_and_malformed_marks_do_not_loop(){
+        assert_eq!(loop_info(&record(),2,3500),(0,0,1.0));
+        assert_eq!(loop_info(&record(),0,2000),(0,0,1.0));
+        assert_eq!(loop_info(&[0;118],0,3500),(0,0,1.0));
+        let mut bad=record();bad[0x24..0x28].copy_from_slice(&1001u32.to_be_bytes());
+        assert_eq!(loop_info(&bad,0,3500),(0,0,1.0));
+    }
 }

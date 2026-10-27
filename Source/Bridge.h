@@ -3,7 +3,7 @@
 #include <cstddef>
 extern "C" {
 struct NpLibrary;
-struct NpView { const float* data; size_t frames; uint16_t channels; uint8_t root, bank, layer; };
+struct NpView { const float* data; size_t frames; uint16_t channels; uint8_t root, bank, layer; size_t loop_start,loop_end; float loop_decay; };
 NpLibrary* np_load(const char*, char*, size_t);
 using NpProgressCallback=void (*)(void*,uint32_t);
 NpLibrary* np_load_with_progress(const char*,char*,size_t,NpProgressCallback,void*);

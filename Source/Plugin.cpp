@@ -1,6 +1,7 @@
 #include <JuceHeader.h>
 #include "Bridge.h"
 #include "Volume.h"
+#include "Playback.h"
 #include "HardwareUI.h"
 #include <array>
 #include <condition_variable>
@@ -48,11 +49,12 @@ public:
         if(!enabled&&!gain.isSmoothing()) voices.fill({});
     }
 private:
-    struct Voice {const NpView* recording=nullptr;double position=0,step=1;float level=0,envelope=1,releaseStep=0;int note=0,channel=1;bool down=false,releasing=false;uint64_t age=0;};
+    struct Voice {const NpView* recording=nullptr;double position=0,step=1;float level=0,envelope=1,releaseStep=0,tailGain=1,tailDecay=1,velocity=1,attackGain=1;int note=0,channel=1;bool down=false,releasing=false;uint64_t age=0;};
     std::array<Voice,128> voices{};
     std::array<bool,16> sustain{};
     std::unique_ptr<NpLibrary,decltype(&np_free)> library{nullptr,np_free};
     std::vector<NpView> recordings;
+    std::array<int,3> layerExtents{0,0,0};
     std::mutex mutex;std::condition_variable condition;
     bool stopping=false,pending=false,loading=false,restoreRequest=false,silenced=true;
     uint64_t generation=0,counter=0;
@@ -89,7 +91,9 @@ private:
             }
             {std::lock_guard<std::mutex> lock(mutex);if(stopping)return;
              if(ticket==generation){
-                if(loaded||request.isEmpty()||restoring||silenced){clearVoices();library.swap(loaded);recordings.swap(records);path=request;silenced=!library;}
+                if(loaded||request.isEmpty()||restoring||silenced){clearVoices();library.swap(loaded);recordings.swap(records);path=request;silenced=!library;
+                    layerExtents.fill(0);for(const auto& r:recordings)if(r.bank<3)layerExtents[r.bank]=std::max(layerExtents[r.bank],(int)r.layer);
+                }
                 if(failure.isNotEmpty())message=failure;
                 else if(library)message=juce::String::fromUTF8(np_name(library.get()));
                 else message="Select a Nord .npno sound";
@@ -101,55 +105,45 @@ private:
     const NpView* choose(int note, float velocity, int bank) {
         auto root=np_root(library.get(), (uint8_t)note);
         if (root == 255) return nullptr;
-        int count=0;
-        const NpView* hardest=nullptr;
-        for (auto& r : recordings) if (r.root==root && r.bank==bank && r.frames>0) {
-            ++count;
-            if (!hardest || r.layer<hardest->layer) hardest=&r;
-        }
-        if (!hardest) return nullptr;
-        // Provisional velocity mapping: spread the ordered recordings over MIDI velocity.
-        // Nord-specific thresholds still require comparison with the reference.
-        const int midiVelocity=juce::jlimit(1,127,juce::roundToInt(velocity*127.0f));
-        const int target=juce::roundToInt((127-midiVelocity)*(float)(count-1)/126.0f);
-        for (auto& r : recordings) if (r.root==root && r.bank==bank && r.frames>0) {
-            int rank=0;
-            for(auto& other:recordings) if(other.root==root && other.bank==bank && other.frames>0 && other.layer<r.layer) ++rank;
-            if(rank==target) return &r;
-        }
-        return hardest;
+        return Playback::choose(recordings,root,juce::roundToInt(velocity*127.0f),bank,layerExtents[(size_t)bank]);
     }
-    void start(int note, int channel, float velocity, int bank) {
+    void start(int note, int channel, float velocity, int bank,float releaseReference=0) {
         auto* recording=choose(note,velocity,bank);
         if (!recording && bank==1) recording=choose(note,velocity,0);
         if (!recording) return;
         Voice* slot=nullptr;
         for (auto& v : voices) if (!v.recording) { slot=&v; break; }
         if (!slot) slot=&*std::min_element(voices.begin(), voices.end(), [](const Voice& a,const Voice& b){return a.age<b.age;});
-        *slot={}; slot->recording=recording; slot->note=note; slot->channel=channel; slot->down=bank!=2; slot->age=++counter;
+        *slot={}; slot->recording=recording; slot->note=note; slot->channel=channel; slot->down=bank!=2; slot->age=++counter;slot->velocity=velocity;slot->attackGain=bank==2?0.0f:1.0f;
         const double fineSemitones=(double)np_fine(library.get(),(uint8_t)note)*0.7/100.0;
         slot->step=(double)np_rate()/rate*std::pow(2.0, ((double)note-recording->root+fineSemitones)/12.0);
-        // Gentle gain response between recorded layers, with output headroom.
-        slot->level=np_gain(library.get())*(0.3f+0.7f*velocity)*0.65f;
+        slot->tailDecay=Playback::hasLoop(*recording)?(float)std::pow((double)recording->loop_decay,slot->step):1.0f;
+        // Quiet strikes need a quiet gain response, not the old 30% minimum.
+        slot->level=bank==2?releaseReference*Playback::releaseGain:np_gain(library.get())*Playback::velocityGain(velocity)*0.65f;
+    }
+    void damp(Voice& voice){
+        if(!voice.recording||voice.recording->bank==2||voice.releasing)return;
+        const int note=voice.note,channel=voice.channel;
+        const float velocity=voice.velocity,reference=voice.level*voice.tailGain*voice.envelope;
+        release(voice);
+        // One release per actual damping event; never on an unmatched note-off,
+        // never while CC64 still holds the voice, and never from another release.
+        start(note,channel,velocity,2,reference);
     }
     void handle(const juce::MidiMessage& m) {
         const auto ch=m.getChannel();
         if (ch<1 || ch>16) return;
         if (m.isNoteOn()) {
             for (auto& v:voices) if (v.recording && v.note==m.getNoteNumber() && v.channel==ch && v.down) { v.down=false; release(v); }
-            start(m.getNoteNumber(),ch,m.getFloatVelocity(),sustain[ch-1]?1:0);
+            start(m.getNoteNumber(),ch,Playback::drivenVelocity(m.getFloatVelocity()),sustain[ch-1]?1:0);
         } else if (m.isNoteOff()) {
             for (auto& v:voices) if (v.recording && v.note==m.getNoteNumber() && v.channel==ch && v.down) {
                 v.down=false;
-                if (!sustain[ch-1] && m.getNoteNumber()<=np_damper(library.get())) release(v);
+                if (!sustain[ch-1] && m.getNoteNumber()<=np_damper(library.get())) damp(v);
             }
-            // Release recordings have not been calibrated against the main voices.
-            // Starting one at a fixed level on every note-off causes a fresh,
-            // unrelated burst, even while the sustain pedal is holding the note.
-            // Let the existing voice fade out instead.
         } else if (m.isController() && m.getControllerNumber()==64) {
             sustain[ch-1]=m.getControllerValue()>=64;
-            if (!sustain[ch-1]) for(auto& v:voices) if(v.recording && v.channel==ch && !v.down && v.note<=np_damper(library.get())) release(v);
+            if (!sustain[ch-1]) for(auto& v:voices) if(v.recording && v.recording->bank!=2 && v.channel==ch && !v.down && v.note<=np_damper(library.get())) damp(v);
         } else if (m.isAllSoundOff()) {
             for(auto& v:voices) if(v.channel==ch) v={};
             sustain[ch-1]=false;
@@ -167,11 +161,18 @@ private:
             for(auto& v:voices){
                 if(!v.recording)continue;const auto& r=*v.recording;
                 for(int i=0;i<size;++i){
-                    if(v.position>=(double)r.frames||v.envelope<=0){v.recording=nullptr;break;}
+                    v.position=Playback::wrap(v.position,r);
+                    if(v.position>=(double)r.frames||v.envelope<=0||v.tailGain<1.0e-8f){v.recording=nullptr;break;}
                     size_t a=(size_t)v.position,b=std::min(a+1,r.frames-1);
-                    float f=(float)(v.position-(double)a),level=v.level*v.envelope*ramp[(size_t)i];
+                    if(Playback::hasLoop(r)&&b>=r.loop_end)b=r.loop_start;
+                    float f=(float)(v.position-(double)a),level=v.level*v.envelope*v.tailGain*ramp[(size_t)i];
+                    if(r.bank==2){
+                        level*=v.attackGain;v.attackGain=std::min(1.0f,v.attackGain+1.0f/(float)(rate*0.008));
+                        level*=std::min(1.0f,(float)((double)r.frames-v.position)/(float)(np_rate()*0.02));
+                    }
                     auto sample=[&](size_t c){return r.data[a*r.channels+c]+f*(r.data[b*r.channels+c]-r.data[a*r.channels+c]);};
                     left[base+i]+=sample(0)*level;right[base+i]+=sample(r.channels==2?1:0)*level;
+                    if(Playback::hasLoop(r)&&v.position>=(double)r.loop_start)v.tailGain*=v.tailDecay;
                     v.position+=v.step;if(v.releasing)v.envelope-=v.releaseStep;
                 }
             }base+=size;

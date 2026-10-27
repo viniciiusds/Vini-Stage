@@ -70,6 +70,7 @@ void compare(const std::vector<float>& actual,const std::vector<float>& a,const 
 
 int testLayers(juce::AudioPluginFormatManager& manager,const juce::PluginDescription& description,const juce::String& first,const juce::String& second){
     try{
+        require(juce::File(first).existsAsFile()&&juce::File(second).existsAsFile(),"Two-layer test fixture missing; provide two existing .npno files");
         juce::String error;
         auto make=[&]{auto instance=manager.createPluginInstance(description,48000,256,error);require(instance!=nullptr,"Could not create layer test instance");instance->prepareToPlay(48000,256);return instance;};
         auto plugin=make();

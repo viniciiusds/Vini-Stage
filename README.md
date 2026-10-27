@@ -8,6 +8,16 @@ Layout com teclado de **88 teclas (A0–C8)** na parte inferior, clicável com o
 
 **Correção de arraste incluída no instalador 0.4.3:** os faders preservam o ponto onde a alça foi segurada e atualizam volume, LEDs e visor durante o movimento, antes de soltar o mouse. O teste do editor envia três posições de arraste para cada fader e confere as alterações de parâmetro antes do mouse-up. Duplo clique continua retornando a 0 dB.
 
+## Versão 0.5.0 em teste — sustain, dinâmica e release
+
+- Caudas sustentadas usam os pontos de loop do `.npno`, com limites validados e decaimento após entrar na região de repetição. O player não encerra a voz simplesmente por chegar ao fim da gravação.
+- Drive interno padrão **−0,50**, com curva própria `x²` sobre a velocity MIDI (arredondada a 1–127). Afeta a camada escolhida e o ganho, sem o piso anterior de 30%. Não reproduz matematicamente o Drive do Ableton ou do Sharp; comece com Velocity do Live neutro e depois faça os ajustes finos.
+- Seleção por valores e espaçamento de camada na escala da biblioteca, em vez de redistribuir igualmente apenas a ordem das gravações. Calibração musical ainda aproximada.
+- Samples de release reativados a **50% de ganho linear** em relação à voz que os dispara, acompanhando sua dinâmica e atenuação da cauda. Só disparam ao abafar a nota: são adiados com CC64 e não disparam em note-off sem voz ativa nem em pedal-up repetido. Entrada/saída suavizadas para evitar cliques.
+- Teste nativo do Royal Grand 3D XL: caudas de 14 s em 44,1/48 kHz, notas graves/centrais/transpostas, pedal antes/depois do note-on, medida de release a 50%, e regressões de duas camadas/estado/volume. O teste da versão publicada 0.4.3 reproduziu o corte; a nova passou. A audição no High Sierra com o Arturia ainda é necessária para aprovar estas mudanças.
+
+O instalador local 0.5.0 é de teste e ainda não foi publicado em Releases. O download público abaixo continua sendo a versão 0.4.3. O usuário confirmou que a versão anterior executa no MacBook High Sierra; isso não substitui a validação auditiva desta nova versão.
+
 ## Instalador Universal `.pkg`
 
 **[Baixar Vini Stage 0.4.3 Universal.pkg](https://github.com/viniciiusds/Vini-Stage/releases/download/v0.4.3/Vini-Stage-0.4.3-Universal.pkg)** · [Todas as versões](https://github.com/viniciiusds/Vini-Stage/releases)
@@ -47,7 +57,7 @@ O nome e a versão do `.pkg` são obtidos do VST3 compilado. Para assinar o paco
 
 O build Universal contém **Intel x86_64 com mínimo macOS 10.13** e **Apple Silicon arm64 com mínimo 11.0**. O alvo principal de execução é um MacBook Pro 2011 com High Sierra; o desenvolvimento acontece no M4.
 
-A versão mínima e as duas arquiteturas foram verificadas no binário. A execução no High Sierra e a integração real com o Live ainda precisam de validação manual. Os testes automatizados executaram o VST3 em um host JUCE no M4: Clavinet D6 6.1 e Royal Grand 3D XL 6.1, cada um com 440 combinações de nota/velocity, além de note-off e sustain.
+A versão mínima e as duas arquiteturas foram verificadas no binário. O usuário confirmou que a versão publicada funciona no MacBook High Sierra com um controlador Arturia. As mudanças de áudio da versão 0.5.0 ainda precisam ser ouvidas nesse conjunto. Os testes automatizados executaram o VST3 em um host JUCE no M4: Clavinet D6 6.1 e Royal Grand 3D XL 6.1, cada um com 440 combinações de nota/velocity, além de note-off e sustain.
 
 ## Compilar no Mac de desenvolvimento
 
@@ -104,7 +114,7 @@ Se o CMake foi instalado pelo script, substitua `cmake` por `.build-tools/bin/cm
 
 ## Limites desta versão
 
-A velocity usa camadas ordenadas e uma curva própria; os pontos exatos de troca ainda não foram validados com a Nord. Loops, decay original, meio-pedal e modelagem exata de ressonância não estão implementados. O campo de trim por gravação não é aplicado, pois sua interpretação disponível silenciava praticamente os agudos no Clavinet testado. O projeto não garante reprodução idêntica à Nord ou ao Sharp.
+Na versão pública 0.4.3, a velocity usa camadas ordenadas e uma curva própria, sem loops. A versão 0.5.0 em teste passa a usar loops validados e decaimento na cauda. Os pontos exatos de troca de velocity e o envelope original da Nord não estão calibrados; meio-pedal e modelagem exata de ressonância não estão implementados. O campo de trim por gravação não é aplicado, pois sua interpretação disponível silenciava praticamente os agudos no Clavinet testado. O projeto não garante reprodução idêntica à Nord ou ao Sharp.
 
 Nenhum sample ou biblioteca Nord é incluído neste repositório. O código não utiliza implementação ou recursos do Sharp Stage Pianos.
 
@@ -132,3 +142,14 @@ O progresso real do leitor pode ser verificado separadamente:
 cmake --build build --target NpnoProgress --config Release -j 4
 build/NpnoProgress "/caminho/para/piano.npno"
 ```
+
+## Testar sustain, Drive e release
+
+```bash
+cmake --build build --target NpnoSmoke --config Release -j 4
+build/NpnoSmoke_artefacts/Release/NpnoSmoke \
+  "$PWD/build/NpnoPlayer_artefacts/Release/VST3/Vini Stage.vst3" \
+  "/caminho/para/Royal Grand 3D XL 6.1.npno" --playability "/pasta/para/audios-de-teste"
+```
+
+Este modo exige um piano com loops e samples de release, como o Royal testado. Os WAVs gerados contêm áudio da biblioteca fornecida pelo usuário e não devem ser commitados nem distribuídos com o código. A fixture sintética para testes de duas camadas pode ser gerada com `cargo run --manifest-path bridge/Cargo.toml --example test_tone -- /tmp/test-sine.npno`.
