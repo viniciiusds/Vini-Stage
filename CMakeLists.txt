@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "")
-project(NpnoPlayer VERSION 0.6.2 LANGUAGES C CXX)
+project(NpnoPlayer VERSION 0.6.3 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 if(NOT DEFINED JUCE_PATH)
     message(FATAL_ERROR "Configure -DJUCE_PATH=/path/to/JUCE")
@@ -29,6 +29,13 @@ juce_add_plugin(NpnoPlayer
     IS_SYNTH TRUE NEEDS_MIDI_INPUT TRUE NEEDS_MIDI_OUTPUT FALSE
     IS_MIDI_EFFECT FALSE COPY_PLUGIN_AFTER_BUILD FALSE
     VST3_CATEGORIES Instrument Sampler)
+# Replace JUCE's generated ICNS with native ICNS representations, including every
+# standard/Retina size. In particular, avoid JUCE's corrupt 16px PNG icp4 chunk.
+if(APPLE)
+    get_target_property(vini_generated_sources NpnoPlayer JUCE_GENERATED_SOURCES_DIRECTORY)
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/assets/ViniStage.icns"
+        "${vini_generated_sources}/Icon.icns" COPYONLY)
+endif()
 juce_generate_juce_header(NpnoPlayer)
 target_sources(NpnoPlayer PRIVATE Source/Plugin.cpp Source/Bridge.h Source/Volume.h Source/HardwareUI.h Source/Playback.h)
 target_compile_definitions(NpnoPlayer PUBLIC JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_VST3_CAN_REPLACE_VST2=0)

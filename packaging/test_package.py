@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Validate a PKG and its migration logic using temporary directories only."""
+import importlib.util
 import plistlib
 import subprocess
 import sys
@@ -88,9 +89,25 @@ def main(package):
         assert icon.is_file() and icon.read_bytes()[:4] == b"icns", "Missing native ICNS resource"
         iconset = temp / "app.iconset"
         run("/usr/bin/iconutil", "-c", "iconset", str(icon), "-o", str(iconset))
-        assert (iconset / "icon_16x16.png").is_file(), "Missing Dock/Finder small icon"
-        assert (iconset / "icon_512x512@2x.png").is_file(), "Missing Retina 1024 icon"
-        print("PASS standalone Info.plist icon, native ICNS and small/Retina representations")
+        asset_root = Path(__file__).resolve().parents[1] / "assets"
+        spec = importlib.util.spec_from_file_location("icon_tools", asset_root / "make-icon.py")
+        icon_tools = importlib.util.module_from_spec(spec)
+        sys.dont_write_bytecode = True
+        spec.loader.exec_module(icon_tools)
+        for size in (16, 32, 128, 256, 512):
+            for scale in (1, 2):
+                suffix = "@2x" if scale == 2 else ""
+                actual = iconset / f"icon_{size}x{size}{suffix}.png"
+                assert actual.is_file(), f"Missing icon: {actual.name}"
+                expected = temp / "expected.png"
+                run("/usr/bin/sips", "-z", str(size * scale), str(size * scale),
+                    str(asset_root / "ViniStage.png"), "--out", str(expected))
+                source_pixels = icon_tools.bitmap(expected, temp / "expected.bmp")
+                decoded_pixels = icon_tools.bitmap(actual, temp / "actual.bmp")
+                assert len(source_pixels) == len(decoded_pixels)
+                error = sum(abs(a-b) for a,b in zip(source_pixels, decoded_pixels)) / len(source_pixels)
+                assert error < 2, f"Corrupt decoded icon {actual.name}: pixel error {error:.2f}"
+        print("PASS standalone ICNS: all 10 standard/Retina sizes decoded and pixels matched to source")
         for path in app_payload.rglob("*"):
             if path.is_file():
                 assert str(path.relative_to(app_payload)).startswith("Applications/Vini Stage.app/")

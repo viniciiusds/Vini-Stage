@@ -1,4 +1,4 @@
-# Vini Stage 0.6.2 — versão de teste
+# Vini Stage 0.6.3 — versão de teste
 
 ## Instalação
 
@@ -14,7 +14,7 @@ Os dois timbres recebem MIDI e são somados. Cada fader tem passos de 1 dB entre
 
 O teclado de 88 teclas responde ao mouse e destaca notas MIDI recebidas. CC64 controla o sustain. Cada seção possui 128 vozes, usadas também pelos samples de release.
 
-## Som do motor 0.6.0, mantido na 0.6.2
+## Som do motor 0.6.0, mantido na 0.6.3
 
 A entrada de velocity agora é neutra: foi removido o Drive interno −0,50. Comece com o efeito Velocity do Live neutro e depois ajuste conforme o controlador. Seleção da camada e ganho da voz são calculados separadamente. Trim por sample, correção por tecla, filtro por voz e decaimento por metadados substituem aproximações anteriores.
 
