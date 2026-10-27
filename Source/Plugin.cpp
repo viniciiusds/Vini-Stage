@@ -2,6 +2,7 @@
 #include "Bridge.h"
 #include "Volume.h"
 #include "Playback.h"
+#include "LibraryCache.h"
 #include "HardwareUI.h"
 #include <array>
 #include <condition_variable>
@@ -15,7 +16,7 @@ public:
         {std::lock_guard<std::mutex> lock(mutex);stopping=true;}
         condition.notify_one();loader.join();
     }
-    void prepare(double r,float volume) {std::lock_guard<std::mutex> lock(mutex);rate=r;clearVoices();gain.reset(r,0.02);gain.setCurrentAndTargetValue(volume);}
+    void prepare(double r,float volume) {std::lock_guard<std::mutex> lock(mutex);rate=r;peakDecay=(float)std::exp(-1.0/(rate*0.05));clearVoices();gain.reset(r,0.02);gain.setCurrentAndTargetValue(volume);}
     void reset(){std::lock_guard<std::mutex> lock(mutex);clearVoices();}
     juce::String status(){std::lock_guard<std::mutex> lock(mutex);return requestedPath.isEmpty()?juce::String{}:(pending||loading?"Loading... "+juce::String(progress())+"%":message);}
     int progress()const{return (int)(progressState.load()&127);}
@@ -26,6 +27,7 @@ public:
         std::lock_guard<std::mutex> lock(mutex);const bool busy=pending||loading;
         node.setAttribute("samplePath",busy?requestedPath:path);node.setAttribute("ready",!busy&&library!=nullptr);
         node.setAttribute("loading",busy);node.setAttribute("progress",progress());
+        node.setAttribute("pcmBytes",(double)(library?np_pcm_bytes(library.get()):0));node.setAttribute("cacheHit",cacheHit);
         node.setAttribute("status",busy?"Loading... "+juce::String(progress())+"%":message);
     }
     void loadFile(const juce::String& filePath,bool restoring=false) {
@@ -49,21 +51,23 @@ public:
         if(!enabled&&!gain.isSmoothing()) voices.fill({});
     }
 private:
-    struct Voice {const NpView* recording=nullptr;double position=0,step=1;float strikeVelocity=1,level=0,envelope=1,releaseStep=0,tailGain=1,tailDecay=1,attackGain=1;int note=0,channel=1;bool down=false,releasing=false;uint64_t age=0;};
+    struct Voice {const NpView* recording=nullptr;double position=0,step=1;float strikeVelocity=1,level=0,envelope=1,releaseStep=0,tailGain=1,tailDecay=1,attackDecay=1,attackGain=1,peak=0,filterL=0,filterR=0,filterCoefficient=0;int note=0,channel=1;bool down=false,releasing=false;uint64_t age=0;};
     std::array<Voice,128> voices{};
     std::array<bool,16> sustain{};
-    std::unique_ptr<NpLibrary,decltype(&np_free)> library{nullptr,np_free};
+    LibraryCache::Ptr library;
     std::vector<NpView> recordings;
     std::array<int,3> layerExtents{0,0,0};
     std::mutex mutex;std::condition_variable condition;
-    bool stopping=false,pending=false,loading=false,restoreRequest=false,silenced=true;
-    uint64_t generation=0,counter=0;
+    bool pending=false,loading=false,restoreRequest=false,silenced=true;
+    std::atomic<bool> stopping{false};
+    std::atomic<uint64_t> generation{0};uint64_t counter=0;bool cacheHit=false;
     juce::String path,requestedPath,message="Select a Nord .npno sound";
-    double rate=44100;
+    double rate=44100;float peakDecay=0.9995f;
     juce::SmoothedValue<float> gain{1.0f};
     std::atomic<bool> droppedMidi{false};
     std::atomic<uint64_t> progressState{0};
     struct ProgressContext{SoundLayer* layer;uint64_t ticket;};
+    static bool loadCancelled(void* context){auto& v=*static_cast<ProgressContext*>(context);return v.layer->stopping.load()||v.layer->generation.load()!=v.ticket;}
     static void loadingProgress(void* context,uint32_t percent){
         auto& value=*static_cast<ProgressContext*>(context);
         auto current=value.layer->progressState.load();
@@ -78,20 +82,22 @@ private:
             {std::unique_lock<std::mutex> lock(mutex);condition.wait(lock,[this]{return stopping||pending;});
              if(stopping)return;request=requestedPath;ticket=generation;restoring=restoreRequest;pending=false;loading=true;}
             char error[1024]{};
-            std::unique_ptr<NpLibrary,decltype(&np_free)> loaded(nullptr,np_free);
+            LibraryCache::Ptr loaded;bool hit=false;
             std::vector<NpView> records;juce::String failure;
             if(request.isNotEmpty()){
                 if(!juce::File(request).existsAsFile())failure="Sound missing. Use Select Sound to locate it.";
                 else{
                     ProgressContext progressContext{this,ticket};
-                    loaded.reset(np_load_with_progress(request.toRawUTF8(),error,sizeof(error),loadingProgress,&progressContext));
+                    const auto file=juce::File(request);const auto key=(file.getFullPathName()+":"+juce::String(file.getSize())+":"+juce::String(file.getLastModificationTime().toMilliseconds())).toStdString();
+                    loaded=LibraryCache::instance().acquire(key,[&]{return LibraryCache::Ptr(np_load_cancellable(request.toRawUTF8(),error,sizeof(error),loadingProgress,loadCancelled,&progressContext),np_free);},[&]{return loadCancelled(&progressContext);},hit);
+                    if(hit)loadingProgress(&progressContext,100);
                     if(loaded){records.resize(np_count(loaded.get()));for(size_t i=0;i<records.size();++i)np_recording(loaded.get(),i,&records[i]);}
                     else failure="Could not load: "+juce::String::fromUTF8(error);
                 }
             }
             {std::lock_guard<std::mutex> lock(mutex);if(stopping)return;
              if(ticket==generation){
-                if(loaded||request.isEmpty()||restoring||silenced){clearVoices();library.swap(loaded);recordings.swap(records);path=request;silenced=!library;
+                if(loaded||request.isEmpty()||restoring||silenced){cacheHit=hit;clearVoices();library.swap(loaded);recordings.swap(records);path=request;silenced=!library;
                     layerExtents.fill(0);for(const auto& r:recordings)if(r.bank<3)layerExtents[r.bank]=std::max(layerExtents[r.bank],(int)r.layer);
                 }
                 if(failure.isNotEmpty())message=failure;
@@ -101,14 +107,14 @@ private:
             // Retired sample memory is released on this worker thread.
         }
     }
-    void release(Voice& v) { if (!v.releasing) { v.releasing=true; v.releaseStep=v.envelope / (float)(rate * Playback::mainReleaseSeconds); } }
+    void release(Voice& v) { if (!v.releasing) { v.releasing=true; v.releaseStep=Playback::releaseCoefficient(rate,v.recording?v.recording->release_ms:500.0f); } }
     const NpView* choose(int note, float velocity, int bank) {
         auto root=np_root(library.get(), (uint8_t)note);
         if (root == 255) return nullptr;
         return Playback::choose(recordings,root,juce::roundToInt(velocity*127.0f),bank,layerExtents[(size_t)bank]);
     }
     void start(int note, int channel, float velocity, int bank, float strikeVelocity=1.0f) {
-        // Keep a stable release take; scale it with the original note-on velocity.
+        // Release level is driven by the main voice's recent pre-fader amplitude.
         if(bank==2)velocity=1.0f;
         auto* recording=choose(note,velocity,bank);
         if (!recording && bank==1) recording=choose(note,velocity,0);
@@ -116,21 +122,22 @@ private:
         Voice* slot=nullptr;
         for (auto& v : voices) if (!v.recording) { slot=&v; break; }
         if (!slot) slot=&*std::min_element(voices.begin(), voices.end(), [](const Voice& a,const Voice& b){return a.age<b.age;});
-        *slot={}; slot->strikeVelocity=strikeVelocity; slot->recording=recording; slot->note=note; slot->channel=channel; slot->down=bank!=2; slot->age=++counter;slot->attackGain=bank==2?0.0f:1.0f;
+        *slot={}; slot->strikeVelocity=strikeVelocity; slot->recording=recording; slot->note=note; slot->channel=channel; slot->down=bank!=2; slot->age=++counter;slot->attackGain=bank==2?1.0f:0.0f;
         const double fineSemitones=(double)np_fine(library.get(),(uint8_t)note)*0.7/100.0;
         slot->step=(double)np_rate()/rate*std::pow(2.0, ((double)note-recording->root+fineSemitones)/12.0);
-        slot->tailDecay=Playback::hasLoop(*recording)?(float)std::pow((double)recording->loop_decay,slot->step):1.0f;
-        // Quiet strikes need a quiet gain response, not the old 30% minimum.
-        slot->level=np_gain(library.get())*0.65f*(bank==2?Playback::releaseGain*Playback::velocityGain(strikeVelocity):Playback::velocityGain(velocity));
+        slot->tailDecay=(float)std::pow((double)recording->loop_decay,slot->step);
+        slot->attackDecay=bank==2?slot->tailDecay:(float)std::pow((double)recording->attack_decay,(double)np_rate()/rate);
+        slot->filterCoefficient=(float)std::exp(-juce::MathConstants<double>::twoPi*3000.0*slot->step/(double)np_rate());
+        slot->level=recording->sample_gain*(bank==2?7.6f*std::max(0.0f,strikeVelocity):np_key_gain(library.get(),(uint8_t)note)*Playback::velocityGain(velocity));
     }
     void damp(Voice& voice){
         if(!voice.recording||voice.recording->bank==2||voice.releasing)return;
         const int note=voice.note,channel=voice.channel;
-        const float strikeVelocity=voice.strikeVelocity;
+        const float strikeVelocity=voice.peak;
         release(voice);
         // One release per actual damping event; never on an unmatched note-off,
         // never while CC64 still holds the voice, and never from another release.
-        start(note,channel,1.0f,2,strikeVelocity);
+        if(strikeVelocity>=1.0e-6f)start(note,channel,1.0f,2,strikeVelocity);
     }
     void handle(const juce::MidiMessage& m) {
         const auto ch=m.getChannel();
@@ -164,18 +171,20 @@ private:
                 if(!v.recording)continue;const auto& r=*v.recording;
                 for(int i=0;i<size;++i){
                     v.position=Playback::wrap(v.position,r);
-                    if(v.position>=(double)r.frames||v.envelope<=0||v.tailGain<1.0e-8f){v.recording=nullptr;break;}
+                    if(v.position>=(double)r.frames||v.envelope<0.0001f||v.tailGain<1.0e-5f){v.recording=nullptr;break;}
                     size_t a=(size_t)v.position,b=std::min(a+1,r.frames-1);
                     if(Playback::hasLoop(r)&&b>=r.loop_end)b=r.loop_start;
                     float f=(float)(v.position-(double)a),level=v.level*v.envelope*v.tailGain*ramp[(size_t)i];
-                    if(r.bank==2){
-                        level*=v.attackGain;v.attackGain=std::min(1.0f,v.attackGain+1.0f/(float)(rate*0.008));
-                        level*=std::min(1.0f,(float)((double)r.frames-v.position)/(float)(np_rate()*0.02));
-                    }
-                    auto sample=[&](size_t c){return r.data[a*r.channels+c]+f*(r.data[b*r.channels+c]-r.data[a*r.channels+c]);};
-                    left[base+i]+=sample(0)*level;right[base+i]+=sample(r.channels==2?1:0)*level;
-                    if(Playback::hasLoop(r)&&v.position>=(double)r.loop_start)v.tailGain*=v.tailDecay;
-                    v.position+=v.step;if(v.releasing)v.envelope-=v.releaseStep;
+                    const float attack=v.attackGain;level*=attack;v.attackGain=std::min(1.0f,v.attackGain+1.0f/32.0f);
+                    if(r.bank==2)level*=std::min(1.0f,(float)(((double)r.frames-v.position)/(v.step*64.0)));
+                    auto sample=[&](size_t c){return Playback::pcm(r,a,c)+f*(Playback::pcm(r,b,c)-Playback::pcm(r,a,c));};
+                    const float rawL=sample(0),rawR=sample(r.channels==2?1:0);
+                    if(!v.releasing&&r.bank!=2){const float magnitude=std::max(std::abs(rawL),std::abs(rawR))*v.level*v.envelope*v.tailGain*attack;v.peak=std::max(magnitude,v.peak*peakDecay);}
+                    v.filterL=v.filterCoefficient*v.filterL+(1-v.filterCoefficient)*rawL;
+                    v.filterR=v.filterCoefficient*v.filterR+(1-v.filterCoefficient)*rawR;
+                    left[base+i]+=v.filterL*level;right[base+i]+=v.filterR*level;
+                    v.tailGain*=Playback::hasLoop(r)&&v.position>=(double)r.loop_start?v.tailDecay:v.attackDecay;
+                    v.position+=v.step;if(v.releasing)v.envelope*=v.releaseStep;
                 }
             }base+=size;
         }

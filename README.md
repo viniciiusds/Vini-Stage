@@ -1,161 +1,66 @@
 # Vini Stage
 
-Instrumento **Vini Stage**: um VST3 simples para carregar arquivos Nord `.npno` diretamente no Ableton Live 11. Clique em **Select A** ou **Select B**, escolha um arquivo e toque por MIDI.
+VST3 e aplicativo standalone para carregar timbres Nord `.npno` diretamente e tocar por MIDI. Dois timbres opcionais A/B, controles simples e teclado visual de 88 teclas. Compatível com **Intel/High Sierra 10.13** e **Apple Silicon/M4**.
 
-![Editor compilado com 88 teclas, logo em minúsculas e painel sem parafusos](docs/interface-0.5.3.png)
+![Interface do editor compilado Vini Stage 0.6.0](docs/interface-0.6.0.png)
 
-Layout com teclado de **88 teclas (A0–C8)** na parte inferior, clicável com o mouse e com destaque das notas recebidas por MIDI. Logo `vini stage` ao lado de Levels, painel sem parafusos, botões Select/Clear menores e faders/LEDs alongados para cima, com margens iguais acima e abaixo dos LEDs. A imagem é uma captura direta do editor compilado, com um acorde MIDI demonstrativo.
+**[Baixar Vini Stage 0.6.0 Universal.pkg — versão de teste](https://github.com/viniciiusds/Vini-Stage/releases/download/v0.6.0/Vini-Stage-0.6.0-Universal.pkg)** · [Todas as versões](https://github.com/viniciiusds/Vini-Stage/releases)
 
-**Correção de arraste incluída no instalador 0.4.3:** os faders preservam o ponto onde a alça foi segurada e atualizam volume, LEDs e visor durante o movimento, antes de soltar o mouse. O teste do editor envia três posições de arraste para cada fader e confere as alterações de parâmetro antes do mouse-up. Duplo clique continua retornando a 0 dB.
+## Mudanças de áudio e carregamento — 0.6.0
 
-**Ajuste 0.5.6:** sample de release proporcional à velocity MIDI original, com ganho máximo de **2%** em velocity 127. Ganho máximo reduzido de 5% para 2% em relação à 0.5.5. A soltura da voz principal permanece em **90 ms**, respeitando o sustain.
+Implementação própria orientada pela análise estática do caminho de piano do Sharp Stage Pianos. A comparação auditiva com o Sharp ativado no High Sierra ainda é necessária; não há promessa de som idêntico.
 
-**Ajuste 0.5.2:** soltura da voz principal ampliada de 90 para 500 ms, com soltura independente do volume do sample de release. A comparação do ruído inicial e do decaimento com a tecla mantida ainda precisa de áudio do Sharp ativado no High Sierra; veja o [relatório e o MIDI de comparação](docs/comparison/2026-10-26-royal-decay-noise.md). Nenhum filtro foi aplicado para mascarar o som sem essa medição.
+- **Velocity neutra na entrada:** removido o Drive −0,50 embutido. A seleção de camadas usa uma coordenada calibrada, respeita fronteiras gravadas no arquivo e calcula fronteiras apenas quando ausentes. O ganho da voz tem uma curva separada, com interpolação em dB.
+- **Ganho por sample e nota:** aplica trim com unidades validadas, correção por tecla e normalização de fallback. Remove o fator global fixo de 0,65 da versão anterior; não aplica um aumento arbitrário de saída.
+- **Release ligado à amplitude recente:** um seguidor com constante de 50 ms acompanha a nota. Ao abafar, o sample de release usa esse estado e a normalização da gravação. Substitui o antigo teto de 2% multiplicado pela velocity inicial; notas já decaídas produzem releases mais discretos.
+- **Soltura exponencial:** substitui os 90 ms lineares. Usa referência de 500 ms ajustada pelos metadados do sample; o tempo corresponde a uma queda de −80 dB. Respeita sustain e notas sem abafador.
+- **Caudas e brilho:** taxas distintas antes/depois do loop, metadados de envelope, estimativa de decaimento quando faltam e filtro por voz de um polo no caminho de piano.
+- **PCM de 16 bits:** preserva a precisão do áudio decodificado e reduz à metade o buffer final comparado aos floats de 32 bits anteriores. Royal Grand 3D XL 6.1: de 1.524.124.752 para 762.062.376 bytes de PCM.
+- **Bibliotecas compartilhadas:** A/B e instâncias do mesmo módulo reutilizam um timbre ainda vivo com mesmo caminho, tamanho e data. Decodificações concorrentes do mesmo arquivo são unificadas. O cache mantém até 128 MiB adicionais de timbres ociosos; XLs maiores não ficam retidos após a última referência desaparecer.
+- **Cancelamento cooperativo:** leitura e preparação verificam cancelamento; a decodificação em curso termina a gravação atual antes de interromper. Evita terminar um piano inteiro antes de atender Clear ou uma seleção mais recente.
 
-## Versão 0.5.6 em teste — sustain, dinâmica e release
+No M4, a primeira carga medida sem cache de áudio do plugin ficou em aproximadamente **1,9 s**, próxima da versão anterior (~2 s). O principal ganho confirmado é memória e reutilização de bibliotecas. Os tempos no MacBook de 2011 ainda precisam ser medidos. [Detalhes técnicos, medições e limites](docs/ENGINE-0.6.0.md).
 
-- Caudas sustentadas usam os pontos de loop do `.npno`, com limites validados e decaimento após entrar na região de repetição. O player não encerra a voz simplesmente por chegar ao fim da gravação.
-- Drive interno padrão **−0,50**, com curva própria `x²` sobre a velocity MIDI (arredondada a 1–127). Afeta a camada escolhida e o ganho, sem o piso anterior de 30%. Não reproduz matematicamente o Drive do Ableton ou do Sharp; comece com Velocity do Live neutro e depois faça os ajustes finos.
-- Seleção por valores e espaçamento de camada na escala da biblioteca, em vez de redistribuir igualmente apenas a ordem das gravações. Calibração musical ainda aproximada.
-- Samples de release em **até 2% de ganho**, proporcional à velocity MIDI original (antes do Drive interno), independente da duração e do decaimento da voz principal. A gravação escolhida também é fixa por nota; o fader A/B continua controlando a saída total. Só disparam ao abafar a nota: são adiados com CC64 e não disparam em note-off sem voz ativa nem em pedal-up repetido. Entrada/saída suavizadas para evitar cliques.
-- Teste nativo do Royal Grand 3D XL: caudas de 14 s em 44,1/48 kHz, notas graves/centrais/transpostas, pedal antes/depois do note-on, medida de release proporcional com máximo de 2% e comparação entre velocities 16/50/64/127, notas curtas/longas e soltura do pedal, e regressões de duas camadas/estado/volume. O teste da versão publicada 0.4.3 reproduziu o corte; a nova passou. A audição no High Sierra com o Arturia ainda é necessária para aprovar estas mudanças.
+**Para comparar o som:** comece com o efeito Velocity do Ableton neutro, sem curvas compensatórias usadas nas versões antigas. Alinhe os níveis de saída e desligue efeitos. O Vini mantém os faders A/B com máximo de 0 dB; não possui o master independente do Sharp, cujo valor padrão observado era −6 dB. Equalize essa diferença ao comparar volume.
 
-**[Baixar Vini Stage 0.5.6 Universal.pkg — versão de teste](https://github.com/viniciiusds/Vini-Stage/releases/download/v0.5.6/Vini-Stage-0.5.6-Universal.pkg)**
+## Instalar e tocar
 
-A versão 0.5.6 está publicada como pré-lançamento para audição no High Sierra/Arturia. As versões anteriores continuam disponíveis em Releases. O usuário confirmou que a versão anterior executa no MacBook High Sierra; isso não substitui a validação auditiva desta nova versão.
+1. Feche o Ableton e abra o `.pkg`.
+2. O instalador coloca **Vini Stage.vst3** em `/Library/Audio/Plug-Ins/VST3/`, disponível para todos os usuários. Informe a senha de administrador quando o instalador solicitar.
+3. No Live 11, habilite **Use VST3 Plug-In System Folders**, faça Rescan se necessário e abra **VST3 → Vinizera → Vini Stage** em uma pista MIDI.
+4. Clique em **Select A** ou **Select B**, escolha um `.npno` e aguarde **Loading... X%**. Só um timbre é suficiente.
+5. Para remover, clique em **Clear A/B**. Para trocar, remova e selecione outro arquivo.
 
-## Instalador Universal `.pkg`
+O mesmo PKG contém **x86_64 com mínimo macOS 10.13** e **arm64 com mínimo 11.0**. A instalação do VST3 substitui versões anteriores no destino global. Uma cópia igual ou mais antiga da pasta VST3 do usuário é guardada em `~/Library/Application Support/Vini Stage/Plugin Backups/` para evitar duplicidade; versões mais novas e plugins com outra identidade são preservados. Timbres e projetos não são alterados.
 
-[Todas as versões e instaladores](https://github.com/viniciiusds/Vini-Stage/releases)
+O PKG é de teste, sem assinatura Developer ID Installer e sem notarização Apple. Builds anteriores foram confirmados pelo usuário no High Sierra com Arturia; a nova versão ainda requer audição naquele Mac. O PKG contém o VST3, não o standalone nem bibliotecas de timbres.
 
-O instalador contém o mesmo VST3 Universal para **Intel/High Sierra 10.13** e **Apple Silicon/M4**. Feche o Live, abra o `.pkg`, siga o assistente e informe a senha de administrador. Ele instala para todos os usuários em `/Library/Audio/Plug-Ins/VST3/Vini Stage.vst3`.
+## Controles e projetos
 
-As próximas versões usam o mesmo identificador de pacote e substituem o bundle antigo nesse caminho. O pacote não é relocável e não sobrescreve uma versão global mais nova. Uma cópia anterior da pasta VST3 do usuário conectado, com a mesma identidade e versão igual ou inferior, é movida para `~/Library/Application Support/Vini Stage/Plugin Backups/` para evitar duplicidade; versões mais novas ou plugins com outra identidade não são movidos. Projetos e arquivos `.npno` não são alterados.
+- Visor Sounds único com linhas A/B. Linha vazia mostra apenas `A:` ou `B:`. Sem botões ON/OFF visíveis.
+- Faders de −60 a 0 dB em passos de 1 dB, mais −∞. Arraste atualiza o áudio, LEDs e visor durante o movimento; duplo clique retorna a 0 dB. O visor permite digitar o valor.
+- LEDs mostram o volume configurado; não são medidores de áudio.
+- 88 teclas A0–C8 clicáveis e com destaque MIDI. Sustain CC64 e 128 vozes por seção, compartilhadas entre notas e releases.
+- Os caminhos A/B e os volumes são salvos no projeto. Ao reabrir, os arquivos são recarregados. Mantenha os `.npno` no mesmo caminho: o áudio não é embutido no projeto.
+- Parâmetros ON/OFF antigos permanecem no host para compatibilidade com automação e projetos anteriores. Selecionar um timbre reativa sua seção.
 
-O pacote atual é de teste, **sem assinatura Developer ID Installer e sem notarização**; o macOS pode impedir sua abertura até haver aprovação pelo usuário. A experiência de distribuição sem alertas exige certificados Developer ID e notarização da Apple. O binário declara mínimo 10.13 para Intel, mas a instalação/execução real no High Sierra continua dependendo de validação no Mac de 2011. Os testes de pacote conferem conteúdo e scripts em diretórios temporários, sem instalar no sistema.
+## Compilar e verificar
 
-`build.sh` também gera o instalador em `dist/`. Para empacotar um VST3 já compilado:
-
-```bash
-bash package.sh
-python3 packaging/test_package.py dist/Vini-Stage-0.5.6-Universal.pkg
-```
-
-O nome e a versão do `.pkg` são obtidos do VST3 compilado. Para assinar o pacote, defina `INSTALLER_SIGN_IDENTITY` com a identidade de um certificado **Developer ID Installer** disponível no chaveiro. Isso não faz a notarização automaticamente; o plugin e o pacote de distribuição ainda precisam do fluxo de assinatura e notarização apropriado.
-
-## Recursos atuais — 0.5.6
-
-- Carregamento de `.npno` em segundo plano, com **Loading... X%** no visor e sem conversão manual para WAV. O percentual acompanha a leitura do arquivo e a decodificação das gravações.
-- Mapeamento de teclas, transposição, ajuste fino e camadas de velocity.
-- Dois timbres opcionais A/B em um único visor **Sounds**. Sem timbre, a linha fica apenas **A:** ou **B:** e não produz som.
-- **Select A/B** abre o arquivo; após a seleção, o mesmo botão passa a **Clear A/B**. Clear remove apenas aquele timbre. Para trocar, use Clear e depois Select. Também é possível cancelar um carregamento usando Clear.
-- Painel vermelho, área cinza única à esquerda com faders A/B, LEDs verdes à direita de cada fader e visor maior à direita com fonte reduzida. Sem botões ON/OFF; teclado visual de 88 teclas na parte inferior.
-- Visores em dB com a largura do conjunto fader + LEDs, botões Select/Clear alinhados sob o visor Sounds.
-- Faders e LEDs mais altos, com 20 px entre o visor em dB e o topo dos LEDs e 20 px entre a base dos LEDs e o separador acima de A/B.
-- Volume de −60 a 0 dB em passos de 1 dB, com posição adicional de silêncio (−∞). Visores em dB editáveis; máximo de 0 dB.
-- Samples mono/estéreo, 128 vozes por seção e sustain CC64.
-- Volumes automatizáveis, com transições suavizadas. Os parâmetros ON/OFF antigos continuam disponíveis no host para preservar automações e estados anteriores, mas não aparecem no painel. Selecionar um novo arquivo reativa essa camada; projetos antigos com OFF continuam respeitando esse estado.
-- Os dois caminhos de timbre, os volumes e ON/OFF são salvos no estado do plugin. Volumes de projetos anteriores são arredondados para o dB inteiro mais próximo, preservando os IDs dos parâmetros. Projetos antigos com um único timbre abrem na seção Sound 1.
-- Note-off com fade suave da voz principal e sample de release proporcional à velocity, limitado a 2%, com soltura principal de 90 ms, adiado enquanto o sustain segura a nota.
-- VST3 e aplicativo standalone para macOS, com entrada MIDI. O `.pkg` instala o VST3; o standalone é gerado na compilação.
-
-## Compatibilidade
-
-O build Universal contém **Intel x86_64 com mínimo macOS 10.13** e **Apple Silicon arm64 com mínimo 11.0**. O alvo principal de execução é um MacBook Pro 2011 com High Sierra; o desenvolvimento acontece no M4.
-
-A versão mínima e as duas arquiteturas foram verificadas no binário. O usuário confirmou que a versão publicada funciona no MacBook High Sierra com um controlador Arturia. As mudanças de áudio da versão 0.5.6 ainda precisam ser ouvidas nesse conjunto. Os testes automatizados executaram o VST3 em um host JUCE no M4: Clavinet D6 6.1 e Royal Grand 3D XL 6.1, cada um com 440 combinações de nota/velocity, além de note-off e sustain.
-
-## Compilar no Mac de desenvolvimento
-
-Requisitos: Apple Command Line Tools, Git e Rust via rustup (1.87 ou posterior). Se não houver CMake instalado, o script usa Python 3 para instalá-lo em um ambiente local `.build-tools/`. A primeira execução precisa de internet para baixar as ferramentas e dependências.
+Requer Rust/rustup com targets `x86_64-apple-darwin` e `aarch64-apple-darwin`, CMake, Xcode Command Line Tools e JUCE 8.0.12. A dependência `nord-format` está fixada em 0.8.0.
 
 ```bash
 bash build.sh
 ```
 
-O script usa JUCE 8.0.12 e `nord-format 0.8.0`, compila as duas arquiteturas e produz:
-
-```text
-build/NpnoPlayer_artefacts/Release/VST3/Vini Stage.vst3
-build/NpnoPlayer_artefacts/Release/Standalone/Vini Stage.app
-```
-
-**Cada compilação bem-sucedida do VST3 assina, verifica e instala automaticamente** em:
-
-```text
-~/Library/Audio/Plug-Ins/VST3/Vini Stage.vst3
-```
-
-Feche o Live antes de atualizar o plugin. Reabra e use Rescan se necessário. Para um build apenas de empacotamento, sem instalar, configure `-DNPNO_INSTALL_AFTER_BUILD=OFF`.
-
-Para reutilizar uma cópia local do JUCE, defina `JUCE_PATH` antes de executar `build.sh`. O CMake também aceita `-DJUCE_PATH=/caminho/do/JUCE`. A revisão usada inicialmente foi `29396c22c93392d6738e021b83196283d6e4d850`.
-
-## Testar o VST3
+O build instala o VST3 assinado ad-hoc em `~/Library/Audio/Plug-Ins/VST3/`. O standalone é gerado em `build/NpnoPlayer_artefacts/Release/Standalone/Vini Stage.app`. O pacote instala no destino global descrito acima.
 
 ```bash
-cmake --build build --target NpnoSmoke --config Release -j 4
-build/NpnoSmoke_artefacts/Release/NpnoSmoke \
-  "$PWD/build/NpnoPlayer_artefacts/Release/VST3/Vini Stage.vst3" \
-  "/caminho/para/piano.npno" \
-  "/caminho/para/segundo-piano.npno"
+bash package.sh
+python3 packaging/test_package.py dist/Vini-Stage-0.6.0-Universal.pkg
 ```
 
-A prévia compilada verifica as 88 teclas visíveis e o destaque por note-on/note-off em MIDI. A interação por clique usa o componente MidiKeyboardComponent do JUCE e precisa de conferência manual na janela nativa.
+Os testes de pacote usam diretórios temporários e não executam instalação real. Para Developer ID Installer, `package.sh` aceita `INSTALLER_SIGN_IDENTITY`; notarização exige um fluxo adicional.
 
-O teste verifica também os passos de 1 dB, a atenuação medida no áudio, o teto de 0 dB, o mute em −∞ e a migração dos volumes de projetos antigos.
+A validação desta versão inclui unidades de metadados, cancelamento e cache concorrente, seleção de camadas do Royal, ganho por tecla, sustain de 14 s em 44,1/48 kHz, release por amplitude/duração, envelope exponencial isolado, duas camadas/estado/volume, editor e pacote Universal. Arquivos `.npno`, WAVs de audição, binários e pseudocódigo do Sharp não fazem parte deste repositório.
 
-O segundo arquivo é opcional no comando de teste. Quando informado, o teste também verifica soma dos timbres, volumes independentes, ON/OFF, uso apenas da seção 2, arquivo ausente e salvamento/reabertura em uma nova instância.
-
-O teste de 88 teclas pressupõe um arquivo que cubra MIDI 21–108. Bibliotecas com outra extensão de teclado podem ter notas descobertas legítimas.
-
-Se o CMake foi instalado pelo script, substitua `cmake` por `.build-tools/bin/cmake` no comando de teste.
-
-## Estrutura
-
-- `Source/Plugin.cpp`: motor de reprodução, estado e interface.
-- `bridge/src/lib.rs`: leitor/decodificador Rust e interface C.
-- `Source/Smoke.cpp` e `Source/LayerSmoke.cpp`: testes usando o VST3 compilado em um host.
-- `Source/Preview.cpp`: renderização do editor real do plugin para conferir o layout, sem abrir uma DAW.
-- `docs/USO.md`: instalação, funcionamento e limites musicais.
-
-## Limites desta versão
-
-A versão atual usa curva própria de velocity, loops validados e decaimento na cauda. Os pontos exatos de troca de velocity e o envelope original da Nord não estão calibrados; meio-pedal e modelagem exata de ressonância não estão implementados. O campo de trim por gravação não é aplicado, pois sua interpretação disponível silenciava praticamente os agudos no Clavinet testado. O projeto não garante reprodução idêntica à Nord ou ao Sharp.
-
-Nenhum sample ou biblioteca Nord é incluído neste repositório. O código não utiliza implementação ou recursos do Sharp Stage Pianos.
-
-## Licenças
-
-Este projeto é disponibilizado sob AGPL-3.0; veja `LICENSE`. JUCE tem licenciamento AGPL/comercial e `nord-format` usa BSD-3-Clause; seus avisos estão em `Licenses/`.
-
-- JUCE: https://github.com/juce-framework/JUCE
-- nord-format: https://docs.rs/nord-format/0.8.0/nord_format/
-
-## Renderizar a interface real
-
-```bash
-cmake --build build --target NpnoPreview --config Release -j 4
-build/NpnoPreview_artefacts/Release/NpnoPreview "$PWD/interface.png" \
-  "/caminho/para/grand.npno" \
-  "/caminho/para/clavinet.npno"
-```
-
-Os dois arquivos são opcionais na prévia. A ferramenta testa os controles do editor e renderiza o layout real, com níveis demonstrativos de −3 dB e −8 dB. Quando recebe dois arquivos, testa o botão Clear B e captura A carregado e B vazio. A imagem no início deste README vem desse editor, não de um mockup. Adicione `--unity` após os dois caminhos para renderizar ambos os faders em 0 dB e conferir a margem máxima.
-
-O progresso real do leitor pode ser verificado separadamente:
-
-```bash
-cmake --build build --target NpnoProgress --config Release -j 4
-build/NpnoProgress "/caminho/para/piano.npno"
-```
-
-## Testar sustain, Drive e release
-
-```bash
-cmake --build build --target NpnoSmoke --config Release -j 4
-build/NpnoSmoke_artefacts/Release/NpnoSmoke \
-  "$PWD/build/NpnoPlayer_artefacts/Release/VST3/Vini Stage.vst3" \
-  "/caminho/para/Royal Grand 3D XL 6.1.npno" --playability "/pasta/para/audios-de-teste"
-```
-
-Este modo exige um piano com loops e samples de release, como o Royal testado. Os WAVs gerados contêm áudio da biblioteca fornecida pelo usuário e não devem ser commitados nem distribuídos com o código. A fixture sintética para testes de duas camadas pode ser gerada com `cargo run --manifest-path bridge/Cargo.toml --example test_tone -- /tmp/test-sine.npno`.
+[Guia de uso](docs/USO.md) · [Notas do motor 0.6.0](docs/ENGINE-0.6.0.md)

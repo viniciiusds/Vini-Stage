@@ -76,6 +76,12 @@ int testLayers(juce::AudioPluginFormatManager& manager,const juce::PluginDescrip
         auto plugin=make();
         const std::array<juce::String,2> paths{first,second};
         setPaths(*plugin,paths);waitFor(*plugin,paths);
+        {
+            auto shared=make();const std::array<juce::String,2> same{first,first};setPaths(*shared,same);waitFor(*shared,same);
+            auto state=snapshot(*shared);int hits=0;for(auto* slot:state->getChildIterator())if(slot->hasTagName("Slot"))hits+=slot->getBoolAttribute("cacheHit");
+            require(hits==2,"Live instruments not shared between instances/slots");
+            std::cout<<"PASS live decoded piano shared by two slots in another instance\n";
+        }
         // A self-generated no-release fixture allows an isolated envelope test.
         // The regular layer test's second input should be bridge/examples/test_tone.
         if(juce::File(second).getFileName().contains("test-sine")){
@@ -91,13 +97,13 @@ int testLayers(juce::AudioPluginFormatManager& manager,const juce::PluginDescrip
                 return result;
             };
             auto held=capture(false),released=capture(true);double maxError=0;
-            for(size_t frame=0;frame<held.size();++frame){double envelope=std::max(0.0,1.0-(double)frame/(48000.0*0.09));
+            for(size_t frame=0;frame<held.size();++frame){double envelope=std::exp(-std::log(10000.0)*(double)frame/(48000.0*0.5));
                 maxError=std::max(maxError,std::abs((double)released[frame]-held[frame]*envelope));}
-            require(maxError<5e-5,"Main release does not match 90 ms fade");
-            double after=0;for(size_t frame=4500;frame<released.size();++frame)after+=released[frame]*released[frame];
-            require(after<1e-12,"Main voice continues after release duration");
-            require(std::abs(released[2000])>1e-8,"Main voice cuts before 90 ms duration");
-            std::cout<<"PASS isolated main voice: 90 ms release envelope, then silence\n";
+            require(maxError<5e-5,"Main release does not match calibrated exponential fade");
+            double after=0;for(size_t frame=24500;frame<released.size();++frame)after+=released[frame]*released[frame];
+            require(after<1e-10,"Main voice continues after release duration");
+            require(std::abs(released[2000])>1e-8,"Main voice cuts before the exponential release");
+            std::cout<<"PASS isolated main voice: 500 ms exponential release (-80 dB), then silence\n";
         }
         controls(*plugin,true,false);auto a=render(*plugin);require(energy(a)>1e-6,"Sound 1 silent");
         controls(*plugin,false,true);auto b=render(*plugin);require(energy(b)>1e-6,"Sound 2 silent");
