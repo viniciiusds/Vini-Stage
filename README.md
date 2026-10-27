@@ -2,25 +2,27 @@
 
 Instrumento **Vini Stage**: um VST3 simples para carregar arquivos Nord `.npno` diretamente no Ableton Live 11. Clique em **Select A** ou **Select B**, escolha um arquivo e toque por MIDI.
 
-![Editor compilado com 88 teclas, logo em minúsculas e painel sem parafusos](docs/interface-0.5.2.png)
+![Editor compilado com 88 teclas, logo em minúsculas e painel sem parafusos](docs/interface-0.5.3.png)
 
 Layout com teclado de **88 teclas (A0–C8)** na parte inferior, clicável com o mouse e com destaque das notas recebidas por MIDI. Logo `vini stage` ao lado de Levels, painel sem parafusos, botões Select/Clear menores e faders/LEDs alongados para cima, com margens iguais acima e abaixo dos LEDs. A imagem é uma captura direta do editor compilado, com um acorde MIDI demonstrativo.
 
 **Correção de arraste incluída no instalador 0.4.3:** os faders preservam o ponto onde a alça foi segurada e atualizam volume, LEDs e visor durante o movimento, antes de soltar o mouse. O teste do editor envia três posições de arraste para cada fader e confere as alterações de parâmetro antes do mouse-up. Duplo clique continua retornando a 0 dB.
 
-**Ajuste 0.5.2:** soltura da voz principal ampliada de 90 para 500 ms, mantendo o sample de release em 40% fixos. A comparação do ruído inicial e do decaimento com a tecla mantida ainda precisa de áudio do Sharp ativado no High Sierra; veja o [relatório e o MIDI de comparação](docs/comparison/2026-10-26-royal-decay-noise.md). Nenhum filtro foi aplicado para mascarar o som sem essa medição.
+**Ajuste 0.5.3:** logo `vini stage` alinhado pela base visível à borda inferior de Levels. Sample de release reduzido de 40% para **15% fixos**, independente de velocity, Drive e duração da nota. A soltura da voz principal permanece em 500 ms, respeitando o sustain.
 
-## Versão 0.5.2 em teste — sustain, dinâmica e release
+**Ajuste 0.5.2:** soltura da voz principal ampliada de 90 para 500 ms, com soltura independente do volume do sample de release. A comparação do ruído inicial e do decaimento com a tecla mantida ainda precisa de áudio do Sharp ativado no High Sierra; veja o [relatório e o MIDI de comparação](docs/comparison/2026-10-26-royal-decay-noise.md). Nenhum filtro foi aplicado para mascarar o som sem essa medição.
+
+## Versão 0.5.3 em teste — sustain, dinâmica e release
 
 - Caudas sustentadas usam os pontos de loop do `.npno`, com limites validados e decaimento após entrar na região de repetição. O player não encerra a voz simplesmente por chegar ao fim da gravação.
 - Drive interno padrão **−0,50**, com curva própria `x²` sobre a velocity MIDI (arredondada a 1–127). Afeta a camada escolhida e o ganho, sem o piso anterior de 30%. Não reproduz matematicamente o Drive do Ableton ou do Sharp; comece com Velocity do Live neutro e depois faça os ajustes finos.
 - Seleção por valores e espaçamento de camada na escala da biblioteca, em vez de redistribuir igualmente apenas a ordem das gravações. Calibração musical ainda aproximada.
-- Samples de release em **40% de ganho fixo**, sem depender da velocity, do Drive, da duração da nota ou do decaimento da voz principal. A gravação escolhida também é fixa por nota; o fader A/B continua controlando a saída total. Só disparam ao abafar a nota: são adiados com CC64 e não disparam em note-off sem voz ativa nem em pedal-up repetido. Entrada/saída suavizadas para evitar cliques.
-- Teste nativo do Royal Grand 3D XL: caudas de 14 s em 44,1/48 kHz, notas graves/centrais/transpostas, pedal antes/depois do note-on, medida de release a 40% fixos e comparação entre velocities 16/64/127, notas curtas/longas e soltura do pedal, e regressões de duas camadas/estado/volume. O teste da versão publicada 0.4.3 reproduziu o corte; a nova passou. A audição no High Sierra com o Arturia ainda é necessária para aprovar estas mudanças.
+- Samples de release em **15% de ganho fixo**, sem depender da velocity, do Drive, da duração da nota ou do decaimento da voz principal. A gravação escolhida também é fixa por nota; o fader A/B continua controlando a saída total. Só disparam ao abafar a nota: são adiados com CC64 e não disparam em note-off sem voz ativa nem em pedal-up repetido. Entrada/saída suavizadas para evitar cliques.
+- Teste nativo do Royal Grand 3D XL: caudas de 14 s em 44,1/48 kHz, notas graves/centrais/transpostas, pedal antes/depois do note-on, medida de release a 15% fixos e comparação entre velocities 16/64/127, notas curtas/longas e soltura do pedal, e regressões de duas camadas/estado/volume. O teste da versão publicada 0.4.3 reproduziu o corte; a nova passou. A audição no High Sierra com o Arturia ainda é necessária para aprovar estas mudanças.
 
-**[Baixar Vini Stage 0.5.2 Universal.pkg — versão de teste](https://github.com/viniciiusds/Vini-Stage/releases/download/v0.5.2/Vini-Stage-0.5.2-Universal.pkg)**
+**[Baixar Vini Stage 0.5.3 Universal.pkg — versão de teste](https://github.com/viniciiusds/Vini-Stage/releases/download/v0.5.3/Vini-Stage-0.5.3-Universal.pkg)**
 
-A versão 0.5.2 está publicada como pré-lançamento para audição no High Sierra/Arturia. As versões anteriores continuam disponíveis em Releases. O usuário confirmou que a versão anterior executa no MacBook High Sierra; isso não substitui a validação auditiva desta nova versão.
+A versão 0.5.3 está publicada como pré-lançamento para audição no High Sierra/Arturia. As versões anteriores continuam disponíveis em Releases. O usuário confirmou que a versão anterior executa no MacBook High Sierra; isso não substitui a validação auditiva desta nova versão.
 
 ## Instalador Universal `.pkg`
 
@@ -36,12 +38,12 @@ O pacote atual é de teste, **sem assinatura Developer ID Installer e sem notari
 
 ```bash
 bash package.sh
-python3 packaging/test_package.py dist/Vini-Stage-0.5.2-Universal.pkg
+python3 packaging/test_package.py dist/Vini-Stage-0.5.3-Universal.pkg
 ```
 
 O nome e a versão do `.pkg` são obtidos do VST3 compilado. Para assinar o pacote, defina `INSTALLER_SIGN_IDENTITY` com a identidade de um certificado **Developer ID Installer** disponível no chaveiro. Isso não faz a notarização automaticamente; o plugin e o pacote de distribuição ainda precisam do fluxo de assinatura e notarização apropriado.
 
-## Recursos atuais — 0.5.2
+## Recursos atuais — 0.5.3
 
 - Carregamento de `.npno` em segundo plano, com **Loading... X%** no visor e sem conversão manual para WAV. O percentual acompanha a leitura do arquivo e a decodificação das gravações.
 - Mapeamento de teclas, transposição, ajuste fino e camadas de velocity.
@@ -54,14 +56,14 @@ O nome e a versão do `.pkg` são obtidos do VST3 compilado. Para assinar o paco
 - Samples mono/estéreo, 128 vozes por seção e sustain CC64.
 - Volumes automatizáveis, com transições suavizadas. Os parâmetros ON/OFF antigos continuam disponíveis no host para preservar automações e estados anteriores, mas não aparecem no painel. Selecionar um novo arquivo reativa essa camada; projetos antigos com OFF continuam respeitando esse estado.
 - Os dois caminhos de timbre, os volumes e ON/OFF são salvos no estado do plugin. Volumes de projetos anteriores são arredondados para o dB inteiro mais próximo, preservando os IDs dos parâmetros. Projetos antigos com um único timbre abrem na seção Sound 1.
-- Note-off com fade suave da voz principal e sample de release a 40% fixos, adiado enquanto o sustain segura a nota.
+- Note-off com fade suave da voz principal e sample de release a 15% fixos, adiado enquanto o sustain segura a nota.
 - VST3 e aplicativo standalone para macOS, com entrada MIDI. O `.pkg` instala o VST3; o standalone é gerado na compilação.
 
 ## Compatibilidade
 
 O build Universal contém **Intel x86_64 com mínimo macOS 10.13** e **Apple Silicon arm64 com mínimo 11.0**. O alvo principal de execução é um MacBook Pro 2011 com High Sierra; o desenvolvimento acontece no M4.
 
-A versão mínima e as duas arquiteturas foram verificadas no binário. O usuário confirmou que a versão publicada funciona no MacBook High Sierra com um controlador Arturia. As mudanças de áudio da versão 0.5.1 ainda precisam ser ouvidas nesse conjunto. Os testes automatizados executaram o VST3 em um host JUCE no M4: Clavinet D6 6.1 e Royal Grand 3D XL 6.1, cada um com 440 combinações de nota/velocity, além de note-off e sustain.
+A versão mínima e as duas arquiteturas foram verificadas no binário. O usuário confirmou que a versão publicada funciona no MacBook High Sierra com um controlador Arturia. As mudanças de áudio da versão 0.5.3 ainda precisam ser ouvidas nesse conjunto. Os testes automatizados executaram o VST3 em um host JUCE no M4: Clavinet D6 6.1 e Royal Grand 3D XL 6.1, cada um com 440 combinações de nota/velocity, além de note-off e sustain.
 
 ## Compilar no Mac de desenvolvimento
 

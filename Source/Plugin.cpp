@@ -335,6 +335,11 @@ class Editor final:public juce::AudioProcessorEditor,private juce::Timer {
 public:
     explicit Editor(Player& p):AudioProcessorEditor(p),player(p),first(p,0),second(p,1),keys(p.keyboard),texture(Hardware::grain()){
         setLookAndFeel(&look);addAndMakeVisible(first);addAndMakeVisible(second);addAndMakeVisible(keys);
+        logo.addLineOfText(Hardware::font(26,true),"vini",20,0);
+        logo.addLineOfText(juce::Font(juce::FontOptions(26).withStyle("Medium")),"stage",67,0);
+        juce::Path logoOutline;logo.createPath(logoOutline);
+        // Align visible glyphs, including the g descender, to the panel's bottom.
+        logo.moveRangeOfGlyphs(0,-1,0,levelsBounds().getBottom()-logoOutline.getBounds().getBottom());
         for(int i=0;i<2;++i){
             auto& row=rows[(size_t)i];addAndMakeVisible(row);row.setFont(Hardware::font(20));
             row.setColour(juce::Label::textColourId,juce::Colour(0xffe8eeee));
@@ -359,12 +364,11 @@ public:
         g.setGradientFill(juce::ColourGradient(juce::Colour(0xffbd252a),r.getTopLeft(),juce::Colour(0xff79070e),r.getBottomRight(),false));g.fillRoundedRectangle(r,12);
         g.saveState();juce::Path clip;clip.addRoundedRectangle(r,12);g.reduceClipRegion(clip);g.setTiledImageFill(texture,0,0,1);g.fillRect(r);g.restoreState();
         g.setColour(juce::Colour(0xffed6a67).withAlpha(0.65f));g.drawRoundedRectangle(r.reduced(1),11,1);
-        g.setColour(juce::Colour(0xffe2e5e1));g.setFont(Hardware::font(26,true));g.drawText("vini",20,260,45,35,juce::Justification::centredLeft);
-        g.setFont(juce::Font(juce::FontOptions(26).withStyle("Medium")));g.drawText("stage",67,260,72,35,juce::Justification::centredLeft);
+        g.setColour(juce::Colour(0xffe2e5e1));logo.draw(g);
         auto frame=keys.getBounds().toFloat().expanded(5);
         g.setColour(juce::Colour(0xff020606));g.fillRoundedRectangle(frame,5);
         g.setColour(juce::Colour(0xff525c5b));g.drawRoundedRectangle(frame,5,1);
-        auto panel=juce::Rectangle<float>(140,20,315,280);
+        auto panel=levelsBounds();
         g.setColour(juce::Colour(0xffa1abab));g.fillRoundedRectangle(panel,8);
         panel=panel.reduced(2);g.setGradientFill(juce::ColourGradient(juce::Colour(0xff303b40),panel.getTopLeft(),juce::Colour(0xff1b252a),panel.getBottomRight(),false));g.fillRoundedRectangle(panel,7);
         g.saveState();g.reduceClipRegion(panel.toNearestInt());g.setTiledImageFill(texture,0,0,1);g.fillRect(panel);g.restoreState();
@@ -382,7 +386,8 @@ public:
         keys.setBounds(22,322,956,92);keys.setKeyWidth(956.0f/52.0f);keys.setLowestVisibleKey(21);
     }
 private:
-    Player& player;Hardware::Look look;VolumePanel first,second;PianoKeyboard keys;juce::Image texture;
+    Player& player;Hardware::Look look;VolumePanel first,second;PianoKeyboard keys;juce::Image texture;juce::GlyphArrangement logo;
+    static juce::Rectangle<float> levelsBounds(){return {140,20,315,280};}
     std::array<juce::Label,2> rows;std::array<juce::TextButton,2> buttons;
     std::unique_ptr<juce::FileChooser> chooser;
     void refresh(){
