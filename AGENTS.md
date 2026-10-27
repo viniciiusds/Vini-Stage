@@ -1,6 +1,6 @@
 # Project workflow
 
-- The user authorizes committing and pushing completed project changes directly to `main`. Keep this workflow unless a later user instruction changes it.
+- For implementation changes, the user authorizes compiling/installing, generating a versioned Universal PKG, updating documentation, committing/pushing directly to `main`, and publishing the PKG to GitHub Releases by default. Do not stop to ask again. Honor any explicit exception (e.g. analysis/image-only, do not compile, or wait to publish).
 - Build and run relevant verification before committing. Never force-push or rewrite shared history without explicit authorization.
 - Primary target: a universal macOS VST3, Intel x86_64 with deployment target 10.13 for a MacBook Pro 2011, plus arm64 for an M4 development Mac. Preserve both architectures.
 - Keep two optional sounds A/B in a single Sounds LCD on the red right side. Shared grey volume area on the left, each fader with green setting LEDs on its right and a dB display. Select A/B becomes Clear A/B when a file is selected; clear removes/cancels only that slot and persists an empty path. Empty rows show only A: / B:. No ON/OFF buttons. Keep an 88-key A0–C8 mouse-playable keyboard at the bottom, highlighting incoming MIDI notes. Preserve legacy ON parameters and IDs for host automation/state compatibility. Selecting a new file re-enables its legacy ON parameter. Keep 1 dB steps (−60 to 0 dB plus −∞), both paths and controls, and restore legacy one-sound projects into A.
