@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "")
-project(NpnoPlayer VERSION 0.6.1 LANGUAGES C CXX)
+project(NpnoPlayer VERSION 0.6.2 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 if(NOT DEFINED JUCE_PATH)
     message(FATAL_ERROR "Configure -DJUCE_PATH=/path/to/JUCE")
@@ -24,6 +24,8 @@ juce_add_plugin(NpnoPlayer
     COMPANY_NAME "Vinizera" BUNDLE_ID "audio.vd.npnoplayer"
     PLUGIN_MANUFACTURER_CODE Vdau PLUGIN_CODE Npno
     FORMATS VST3 Standalone PRODUCT_NAME "Vini Stage"
+    ICON_BIG "${CMAKE_CURRENT_SOURCE_DIR}/assets/ViniStage.png"
+    ICON_SMALL "${CMAKE_CURRENT_SOURCE_DIR}/assets/ViniStage-small.png"
     IS_SYNTH TRUE NEEDS_MIDI_INPUT TRUE NEEDS_MIDI_OUTPUT FALSE
     IS_MIDI_EFFECT FALSE COPY_PLUGIN_AFTER_BUILD FALSE
     VST3_CATEGORIES Instrument Sampler)

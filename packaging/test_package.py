@@ -80,6 +80,17 @@ def main(package):
             app_info = plistlib.load(stream)
         assert app_info["CFBundleShortVersionString"] == version
         assert app_info["CFBundleIdentifier"] == "audio.vd.npnoplayer"
+        icon_name = app_info.get("CFBundleIconFile")
+        assert icon_name, "Standalone has no app icon reference"
+        if not icon_name.endswith(".icns"):
+            icon_name += ".icns"
+        icon = app / "Contents/Resources" / icon_name
+        assert icon.is_file() and icon.read_bytes()[:4] == b"icns", "Missing native ICNS resource"
+        iconset = temp / "app.iconset"
+        run("/usr/bin/iconutil", "-c", "iconset", str(icon), "-o", str(iconset))
+        assert (iconset / "icon_16x16.png").is_file(), "Missing Dock/Finder small icon"
+        assert (iconset / "icon_512x512@2x.png").is_file(), "Missing Retina 1024 icon"
+        print("PASS standalone Info.plist icon, native ICNS and small/Retina representations")
         for path in app_payload.rglob("*"):
             if path.is_file():
                 assert str(path.relative_to(app_payload)).startswith("Applications/Vini Stage.app/")

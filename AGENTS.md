@@ -20,3 +20,5 @@
 - The user approved the keyboard/layout and authorized packaging/publication as 0.4.2. Preserve the approved layout in future builds.
 
 - Main voice note-off fade is exponential as of 0.6.0, following the observed 500 ms reference scaled by per-sample release metadata, time to -80 dB. This supersedes the earlier approved 90 ms linear fade. Do not claim licensed Sharp audio A/B or perfect matching. Preserve its original binary/license; never commit proprietary binaries or decompiled code. The Vini has no separate master; document the Sharp default master -6 dB difference when comparing levels.
+
+- String Res is explicitly deferred to docs/BACKLOG.md; do not implement without a new user request. Preserve the standalone icon: white uppercase VS on the plugin red gradient, source in assets/ViniStage.svg and raster in assets/ViniStage.png, wired through JUCE ICON_BIG/ICON_SMALL.
