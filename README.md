@@ -16,7 +16,9 @@ Layout com teclado de **88 teclas (A0–C8)** na parte inferior, clicável com o
 - Samples de release reativados a **50% de ganho linear** em relação à voz que os dispara, acompanhando sua dinâmica e atenuação da cauda. Só disparam ao abafar a nota: são adiados com CC64 e não disparam em note-off sem voz ativa nem em pedal-up repetido. Entrada/saída suavizadas para evitar cliques.
 - Teste nativo do Royal Grand 3D XL: caudas de 14 s em 44,1/48 kHz, notas graves/centrais/transpostas, pedal antes/depois do note-on, medida de release a 50%, e regressões de duas camadas/estado/volume. O teste da versão publicada 0.4.3 reproduziu o corte; a nova passou. A audição no High Sierra com o Arturia ainda é necessária para aprovar estas mudanças.
 
-O instalador local 0.5.0 é de teste e ainda não foi publicado em Releases. O download público abaixo continua sendo a versão 0.4.3. O usuário confirmou que a versão anterior executa no MacBook High Sierra; isso não substitui a validação auditiva desta nova versão.
+**[Baixar Vini Stage 0.5.0 Universal.pkg — versão de teste](https://github.com/viniciiusds/Vini-Stage/releases/download/v0.5.0/Vini-Stage-0.5.0-Universal.pkg)**
+
+A versão 0.5.0 está publicada como pré-lançamento para audição no High Sierra/Arturia. A versão estável anterior continua disponível abaixo. O usuário confirmou que a versão anterior executa no MacBook High Sierra; isso não substitui a validação auditiva desta nova versão.
 
 ## Instalador Universal `.pkg`
 
