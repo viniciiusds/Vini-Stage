@@ -21,6 +21,7 @@ inline const NpView* choose(const std::vector<NpView>& recordings,int root,int v
 // reproduction of Ableton's unpublished transfer function. -0.50 gives x^2.
 constexpr float defaultDrive=-0.50f;
 constexpr float releaseGain=0.40f;
+constexpr double mainReleaseSeconds=0.500;
 inline float drivenVelocity(float velocity,float drive=defaultDrive){
     const float curved=std::pow(std::clamp(velocity,0.0f,1.0f),std::exp2(-2.0f*std::clamp(drive,-1.0f,1.0f)));
     return (float)std::clamp((int)std::lround(curved*127.0f),1,127)/127.0f;

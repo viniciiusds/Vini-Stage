@@ -5,6 +5,9 @@ int testLayers(juce::AudioPluginFormatManager&,const juce::PluginDescription&,co
 
 int testPlayability(juce::AudioPluginInstance&,const juce::String&,const juce::File&);
 
+int inspectReference(juce::AudioPluginInstance&);
+int renderReference(juce::AudioPluginInstance&,const juce::File&,const juce::File&);
+
 int main(int argc,char** argv) {
     juce::ScopedJuceInitialiser_GUI init;
     if(argc<3) {std::cerr<<"Usage: NpnoSmoke plugin.vst3 sound.npno\n";return 1;}
@@ -16,6 +19,8 @@ int main(int argc,char** argv) {
     auto plugin=manager.createPluginInstance(*descriptions[0],48000,256,error);
     if(!plugin) {std::cerr<<error<<"\n";return 3;}
     plugin->prepareToPlay(48000,256);
+    if(juce::String(argv[2])=="--inspect-reference")return inspectReference(*plugin);
+    if(argc>=5&&juce::String(argv[2])=="--render-reference")return renderReference(*plugin,juce::File(argv[3]),juce::File(argv[4]));
     juce::XmlElement xml("NPnoPlayer");xml.setAttribute("samplePath",juce::File(argv[2]).getFullPathName());
     juce::MemoryBlock inner; juce::AudioProcessor::copyXmlToBinary(xml,inner);
     juce::XmlElement wrapper("VST3PluginState");

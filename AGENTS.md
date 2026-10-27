@@ -17,3 +17,5 @@
 - `package.sh` produces a legacy-compressed Universal PKG targeting macOS 10.13+, installing globally in `/Library/Audio/Plug-Ins/VST3/`. Keep its stable package identifier, non-relocatable/version-checked atomic bundle upgrade and safe per-user backup migration. Do not claim Developer ID signing, notarization or real High Sierra installation unless actually verified. Package tests must use isolated temporary roots and never run a real system installation without the user's explicit request.
 
 - The user approved the keyboard/layout and authorized packaging/publication as 0.4.2. Preserve the approved layout in future builds.
+
+- Main voice note-off fade is 500 ms as of 0.5.2, separate from the fixed 40% release sample. Noise/held-envelope comparison to Sharp is not proven: Sharp is activated only on the user's High Sierra. Do not claim an audio A/B or add noise suppression based solely on a silent unlicensed reference instance.

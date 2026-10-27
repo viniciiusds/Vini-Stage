@@ -2,13 +2,15 @@
 
 Instrumento **Vini Stage**: um VST3 simples para carregar arquivos Nord `.npno` diretamente no Ableton Live 11. Clique em **Select A** ou **Select B**, escolha um arquivo e toque por MIDI.
 
-![Editor compilado com 88 teclas, logo em minúsculas e painel sem parafusos](docs/interface-0.5.1.png)
+![Editor compilado com 88 teclas, logo em minúsculas e painel sem parafusos](docs/interface-0.5.2.png)
 
 Layout com teclado de **88 teclas (A0–C8)** na parte inferior, clicável com o mouse e com destaque das notas recebidas por MIDI. Logo `vini stage` ao lado de Levels, painel sem parafusos, botões Select/Clear menores e faders/LEDs alongados para cima, com margens iguais acima e abaixo dos LEDs. A imagem é uma captura direta do editor compilado, com um acorde MIDI demonstrativo.
 
 **Correção de arraste incluída no instalador 0.4.3:** os faders preservam o ponto onde a alça foi segurada e atualizam volume, LEDs e visor durante o movimento, antes de soltar o mouse. O teste do editor envia três posições de arraste para cada fader e confere as alterações de parâmetro antes do mouse-up. Duplo clique continua retornando a 0 dB.
 
-## Versão 0.5.1 em teste — sustain, dinâmica e release
+**Ajuste 0.5.2:** soltura da voz principal ampliada de 90 para 500 ms, mantendo o sample de release em 40% fixos. A comparação do ruído inicial e do decaimento com a tecla mantida ainda precisa de áudio do Sharp ativado no High Sierra; veja o [relatório e o MIDI de comparação](docs/comparison/2026-10-26-royal-decay-noise.md). Nenhum filtro foi aplicado para mascarar o som sem essa medição.
+
+## Versão 0.5.2 em teste — sustain, dinâmica e release
 
 - Caudas sustentadas usam os pontos de loop do `.npno`, com limites validados e decaimento após entrar na região de repetição. O player não encerra a voz simplesmente por chegar ao fim da gravação.
 - Drive interno padrão **−0,50**, com curva própria `x²` sobre a velocity MIDI (arredondada a 1–127). Afeta a camada escolhida e o ganho, sem o piso anterior de 30%. Não reproduz matematicamente o Drive do Ableton ou do Sharp; comece com Velocity do Live neutro e depois faça os ajustes finos.
@@ -16,9 +18,9 @@ Layout com teclado de **88 teclas (A0–C8)** na parte inferior, clicável com o
 - Samples de release em **40% de ganho fixo**, sem depender da velocity, do Drive, da duração da nota ou do decaimento da voz principal. A gravação escolhida também é fixa por nota; o fader A/B continua controlando a saída total. Só disparam ao abafar a nota: são adiados com CC64 e não disparam em note-off sem voz ativa nem em pedal-up repetido. Entrada/saída suavizadas para evitar cliques.
 - Teste nativo do Royal Grand 3D XL: caudas de 14 s em 44,1/48 kHz, notas graves/centrais/transpostas, pedal antes/depois do note-on, medida de release a 40% fixos e comparação entre velocities 16/64/127, notas curtas/longas e soltura do pedal, e regressões de duas camadas/estado/volume. O teste da versão publicada 0.4.3 reproduziu o corte; a nova passou. A audição no High Sierra com o Arturia ainda é necessária para aprovar estas mudanças.
 
-**[Baixar Vini Stage 0.5.1 Universal.pkg — versão de teste](https://github.com/viniciiusds/Vini-Stage/releases/download/v0.5.1/Vini-Stage-0.5.1-Universal.pkg)**
+**[Baixar Vini Stage 0.5.2 Universal.pkg — versão de teste](https://github.com/viniciiusds/Vini-Stage/releases/download/v0.5.2/Vini-Stage-0.5.2-Universal.pkg)**
 
-A versão 0.5.1 está publicada como pré-lançamento para audição no High Sierra/Arturia. As versões anteriores continuam disponíveis em Releases. O usuário confirmou que a versão anterior executa no MacBook High Sierra; isso não substitui a validação auditiva desta nova versão.
+A versão 0.5.2 está publicada como pré-lançamento para audição no High Sierra/Arturia. As versões anteriores continuam disponíveis em Releases. O usuário confirmou que a versão anterior executa no MacBook High Sierra; isso não substitui a validação auditiva desta nova versão.
 
 ## Instalador Universal `.pkg`
 
@@ -34,12 +36,12 @@ O pacote atual é de teste, **sem assinatura Developer ID Installer e sem notari
 
 ```bash
 bash package.sh
-python3 packaging/test_package.py dist/Vini-Stage-0.5.1-Universal.pkg
+python3 packaging/test_package.py dist/Vini-Stage-0.5.2-Universal.pkg
 ```
 
 O nome e a versão do `.pkg` são obtidos do VST3 compilado. Para assinar o pacote, defina `INSTALLER_SIGN_IDENTITY` com a identidade de um certificado **Developer ID Installer** disponível no chaveiro. Isso não faz a notarização automaticamente; o plugin e o pacote de distribuição ainda precisam do fluxo de assinatura e notarização apropriado.
 
-## Recursos atuais — 0.5.1
+## Recursos atuais — 0.5.2
 
 - Carregamento de `.npno` em segundo plano, com **Loading... X%** no visor e sem conversão manual para WAV. O percentual acompanha a leitura do arquivo e a decodificação das gravações.
 - Mapeamento de teclas, transposição, ajuste fino e camadas de velocity.

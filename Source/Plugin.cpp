@@ -101,7 +101,7 @@ private:
             // Retired sample memory is released on this worker thread.
         }
     }
-    void release(Voice& v) { if (!v.releasing) { v.releasing=true; v.releaseStep=v.envelope / (float)(rate * 0.09); } }
+    void release(Voice& v) { if (!v.releasing) { v.releasing=true; v.releaseStep=v.envelope / (float)(rate * Playback::mainReleaseSeconds); } }
     const NpView* choose(int note, float velocity, int bank) {
         auto root=np_root(library.get(), (uint8_t)note);
         if (root == 255) return nullptr;

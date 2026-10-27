@@ -1,4 +1,4 @@
-# Vini Stage 0.5.1 — versão de teste
+# Vini Stage 0.5.2 — versão de teste
 
 Instrumento VST3 com botões **Select A** e **Select B** para abrir um arquivo `.npno` diretamente. Os samples são decodificados em memória; não é necessário converter ou importar WAVs.
 
@@ -46,7 +46,7 @@ A declaração de versão mínima foi conferida no Mach-O. O usuário confirmou 
 
 ## Limites musicais atuais
 
-Esta é uma implementação inicial própria, não uma reprodução exata do teclado Nord ou do Sharp. Usa curva própria de Drive −0,50 (x²) e valores de camada na escala da biblioteca; os pontos de troca e a resposta exata ainda não foram calibrados com o instrumento original. Loops válidos prolongam as caudas com decaimento, e a voz principal mantém soltura de 90 ms acompanhada do sample de release a 40% fixos. O envelope original completo, meio-pedal e ressonância por modelagem ainda não foram implementados. O nível bruto dos samples é preservado; o campo de trim não é aplicado porque a interpretação disponível deixou agudos praticamente inaudíveis no Clavinet testado.
+Esta é uma implementação inicial própria, não uma reprodução exata do teclado Nord ou do Sharp. Usa curva própria de Drive −0,50 (x²) e valores de camada na escala da biblioteca; os pontos de troca e a resposta exata ainda não foram calibrados com o instrumento original. Loops válidos prolongam as caudas com decaimento, e a voz principal mantém soltura de 500 ms acompanhada do sample de release a 40% fixos. O envelope original completo, meio-pedal e ressonância por modelagem ainda não foram implementados. O nível bruto dos samples é preservado; o campo de trim não é aplicado porque a interpretação disponível deixou agudos praticamente inaudíveis no Clavinet testado.
 
 Foi validado **Clavinet D6 6.1.npno**, stream `0x0464`: 38 gravações, 17 notas-raiz. As 88 teclas de 21 a 108 responderam em cinco velocities (440 combinações), com áudio finito e não silencioso. Note-off e sustain passaram. Isso não garante suporte a todas as bibliotecas `.npno`.
 
@@ -99,3 +99,7 @@ Drive padrão interno −0,50; a implementação própria usa x² e não é uma 
 ## Versão 0.5.1 — release fixo
 
 Nesta versão, o sample de release usa 40% de ganho fixo e uma gravação fixa por nota. Esse nível não acompanha a intensidade da nota, o Drive, o tempo segurado ou o decaimento da voz principal. O fader da camada continua controlando a saída total. Mantidos o adiamento por sustain e o bloqueio de disparos repetidos. Substitui o comportamento de 50% relativo do instalador 0.5.0.
+
+## Versão 0.5.2 — soltura da voz principal
+
+Amplia a rampa de note-off de 90 para 500 ms, usando como referência o parâmetro padrão observado na instalação do Sharp. Mantém o release em 40% fixos e o sustain. A hipótese sobre o “ar” inicial e o decaimento com a tecla mantida ainda requer comparação dos WAVs no High Sierra; o Sharp do M4 não está ativado. Consulte o relatório em `docs/comparison/2026-10-26-royal-decay-noise.md`.

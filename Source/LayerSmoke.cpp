@@ -76,6 +76,29 @@ int testLayers(juce::AudioPluginFormatManager& manager,const juce::PluginDescrip
         auto plugin=make();
         const std::array<juce::String,2> paths{first,second};
         setPaths(*plugin,paths);waitFor(*plugin,paths);
+        // A self-generated no-release fixture allows an isolated envelope test.
+        // The regular layer test's second input should be bridge/examples/test_tone.
+        if(juce::File(second).getFileName().contains("test-sine")){
+            controls(*plugin,false,true);juce::AudioBuffer<float> audio(2,256);juce::MidiBuffer events;
+            auto capture=[&](bool noteOff){
+                events.addEvent(juce::MidiMessage::allSoundOff(1),0);
+                for(int block=0;block<10;++block){plugin->processBlock(audio,events);events.clear();}
+                events.addEvent(juce::MidiMessage::noteOn(1,60,(juce::uint8)127),0);
+                for(int block=0;block<20;++block){plugin->processBlock(audio,events);events.clear();}
+                if(noteOff)events.addEvent(juce::MidiMessage::noteOff(1,60),0);
+                std::vector<float> result;
+                for(int block=0;block<113;++block){plugin->processBlock(audio,events);events.clear();for(int frame=0;frame<256;++frame)result.push_back(audio.getSample(0,frame));}
+                return result;
+            };
+            auto held=capture(false),released=capture(true);double maxError=0;
+            for(size_t frame=0;frame<held.size();++frame){double envelope=std::max(0.0,1.0-(double)frame/(48000.0*0.5));
+                maxError=std::max(maxError,std::abs((double)released[frame]-held[frame]*envelope));}
+            require(maxError<5e-5,"Main release does not match 500 ms fade");
+            double after=0;for(size_t frame=25000;frame<released.size();++frame)after+=released[frame]*released[frame];
+            require(after<1e-12,"Main voice continues after release duration");
+            require(std::abs(released[8000])>1e-8,"Main voice still cuts at old 90 ms duration");
+            std::cout<<"PASS isolated main voice: 500 ms release envelope, audible beyond 90 ms, then silence\n";
+        }
         controls(*plugin,true,false);auto a=render(*plugin);require(energy(a)>1e-6,"Sound 1 silent");
         controls(*plugin,false,true);auto b=render(*plugin);require(energy(b)>1e-6,"Sound 2 silent");
         controls(*plugin,true,true);compare(render(*plugin),a,b,1,1);
