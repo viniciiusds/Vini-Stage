@@ -1,10 +1,10 @@
-# Vini Stage 0.6.3 — versão de teste
+# Vini Stage 0.6.4 — versão de teste
 
 ## Instalação
 
 Feche o Ableton e o Vini Stage standalone. Execute o PKG Universal e, na etapa Tipo de instalação, marque **VST3**, **Standalone** ou ambos; informe a senha de administrador. O VST3 é instalado em `/Library/Audio/Plug-Ins/VST3/Vini Stage.vst3` e o aplicativo em `/Applications/Vini Stage.app`. Um componente desmarcado não é removido nem atualizado. O mesmo pacote serve para Intel/High Sierra 10.13 e Apple Silicon/11+. As versões antigas do plugin são atualizadas; cópias antigas na pasta do usuário são guardadas em backup para evitar duplicidade. O pacote ainda não possui assinatura Developer ID Installer nem notarização.
 
-O standalone usa o ícone vermelho com as letras brancas VS. Para tocar sem DAW, abra Aplicativos → Vini Stage e configure a entrada MIDI e a saída de áudio nos ajustes do aplicativo. Para o plugin no Ableton Live 11, habilite Use VST3 Plug-In System Folders e carregue VST3 → Vinizera → Vini Stage. Após atualizar, reabra o Live e faça Rescan se necessário.
+O standalone usa o ícone vermelho com VS na parte superior e teclas de piano embaixo. Para tocar sem DAW, abra Aplicativos → Vini Stage e configure a entrada MIDI e a saída de áudio nos ajustes do aplicativo. Para o plugin no Ableton Live 11, habilite Use VST3 Plug-In System Folders e carregue VST3 → Vinizera → Vini Stage. Após atualizar, reabra o Live e faça Rescan se necessário.
 
 ## Timbres e controles
 
@@ -14,7 +14,7 @@ Os dois timbres recebem MIDI e são somados. Cada fader tem passos de 1 dB entre
 
 O teclado de 88 teclas responde ao mouse e destaca notas MIDI recebidas. CC64 controla o sustain. Cada seção possui 128 vozes, usadas também pelos samples de release.
 
-## Som do motor 0.6.0, mantido na 0.6.3
+## Som do motor 0.6.0, mantido na 0.6.4
 
 A entrada de velocity agora é neutra: foi removido o Drive interno −0,50. Comece com o efeito Velocity do Live neutro e depois ajuste conforme o controlador. Seleção da camada e ganho da voz são calculados separadamente. Trim por sample, correção por tecla, filtro por voz e decaimento por metadados substituem aproximações anteriores.
 

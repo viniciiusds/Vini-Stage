@@ -1,6 +1,7 @@
 # Standalone icon
 
 `ViniStage.svg` is the editable design; `ViniStage.png` is the 1024 px master.
+The approved design has smaller white VS above a compact framed piano keyboard.
 The background matches the editor's #bd252a → #79070e gradient.
 
 After changing the master, regenerate the native icon on macOS:

@@ -4,15 +4,15 @@ VST3 e aplicativo standalone para carregar timbres Nord `.npno` diretamente e to
 
 ![Interface do editor compilado Vini Stage 0.6.0](docs/interface-0.6.0.png)
 
-**[Baixar Vini Stage 0.6.3 Universal.pkg — versão de teste](https://github.com/viniciiusds/Vini-Stage/releases/download/v0.6.3/Vini-Stage-0.6.3-Universal.pkg)** · [Todas as versões](https://github.com/viniciiusds/Vini-Stage/releases)
+**[Baixar Vini Stage 0.6.4 Universal.pkg — versão de teste](https://github.com/viniciiusds/Vini-Stage/releases/download/v0.6.4/Vini-Stage-0.6.4-Universal.pkg)** · [Todas as versões](https://github.com/viniciiusds/Vini-Stage/releases)
 
-## Versão 0.6.3 — correção do ícone do aplicativo
+## Versão 0.6.4 — novo ícone com teclas de piano
 
-Corrige a representação pequena corrompida no Finder/Dock. O ICNS agora é gerado com RGB/máscara nos tamanhos pequenos e PNG nas representações Retina, validando também os pixels decodificados.
+Novo ícone: **VS** menor na parte superior e teclado compacto abaixo, com o mesmo fundo vermelho do plugin. Mantém o ICNS corrigido e a validação dos pixels nos tamanhos padrão e Retina.
 
 ![Ícone VS do standalone](docs/icon-preview.png)
 
-O standalone recebe um ícone vermelho com as letras brancas **VS**, usando o mesmo degradê do painel do plugin. O ícone inclui tamanhos próprios para Finder e Dock. Fontes do desenho em [assets/ViniStage.svg](assets/ViniStage.svg).
+O standalone recebe um ícone vermelho com as letras brancas **VS** e teclas de piano, usando o mesmo degradê do painel do plugin. O ícone inclui tamanhos próprios para Finder e Dock. Fontes do desenho em [assets/ViniStage.svg](assets/ViniStage.svg).
 
 **String Res permanece adiado**, registrado no [backlog](docs/BACKLOG.md). O motor de áudio e o layout permanecem os da versão anterior.
 
@@ -75,7 +75,7 @@ O build instala o VST3 assinado ad-hoc em `~/Library/Audio/Plug-Ins/VST3/`. O st
 
 ```bash
 bash package.sh
-python3 packaging/test_package.py dist/Vini-Stage-0.6.3-Universal.pkg
+python3 packaging/test_package.py dist/Vini-Stage-0.6.4-Universal.pkg
 ```
 
 Os testes de pacote usam diretórios temporários e não executam instalação real. Para Developer ID Installer, `package.sh` aceita `INSTALLER_SIGN_IDENTITY`; notarização exige um fluxo adicional.

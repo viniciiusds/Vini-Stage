@@ -21,6 +21,6 @@
 
 - Main voice note-off fade is exponential as of 0.6.0, following the observed 500 ms reference scaled by per-sample release metadata, time to -80 dB. This supersedes the earlier approved 90 ms linear fade. Do not claim licensed Sharp audio A/B or perfect matching. Preserve its original binary/license; never commit proprietary binaries or decompiled code. The Vini has no separate master; document the Sharp default master -6 dB difference when comparing levels.
 
-- String Res is explicitly deferred to docs/BACKLOG.md; do not implement without a new user request. Preserve the standalone icon: white uppercase VS on the plugin red gradient, source in assets/ViniStage.svg and raster in assets/ViniStage.png, wired through JUCE ICON_BIG/ICON_SMALL.
+- String Res is explicitly deferred to docs/BACKLOG.md; do not implement without a new user request. Preserve the standalone icon: approved option 1: smaller white uppercase VS above a compact framed piano keyboard on the plugin red gradient, source in assets/ViniStage.svg and raster in assets/ViniStage.png, wired through JUCE ICON_BIG/ICON_SMALL.
 
 - macOS icons must use assets/ViniStage.icns generated with assets/make-icon.py (legacy RGB/masks for small sizes, PNG for Retina). Replace JUCE-generated ICNS at configure time; its 16px PNG icp4 chunk produced visible corruption. Test decoded pixels, not just the presence of icon sizes.
