@@ -3,6 +3,8 @@
 #include <cstddef>
 extern "C" {
 struct NpLibrary;
+// Legacy field names retained: loop_decay is applied BEFORE the loop;
+// attack_decay is applied IN the loop. They are source-frame coefficients.
 struct NpView { const int16_t* data; size_t frames; uint16_t channels; uint8_t root, bank, layer; size_t loop_start,loop_end; float loop_decay; float attack_decay=1, sample_gain=1, release_ms=500; uint16_t boundary=0; };
 NpLibrary* np_load(const char*, char*, size_t);
 using NpProgressCallback=void (*)(void*,uint32_t);

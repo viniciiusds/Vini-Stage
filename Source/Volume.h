@@ -3,6 +3,8 @@
 #include <cmath>
 
 namespace Volume {
+// Fixed +10 dB after the A+B mix; individual faders remain capped at 0 dB.
+constexpr float outputGain=3.1622776601683795f;
 constexpr int muteDb=-61;
 constexpr int minimumDb=-60;
 inline int decibels(float gain) {

@@ -66,8 +66,9 @@ fn measured_decay(pcm:&[i16],channels:u16,loop_start:usize,root:u8)->f64{
 }
 fn metadata(record:&[u8;118],root:u8,bank:u8,pcm:&[i16],channels:u16,loop_start:usize,version:u16)->(f32,f32,f32,f32){
     let fallback=||measured_decay(pcm,channels,loop_start,root);
-    let attack_db=rate_from_q23(&record[0x2e..0x32]).unwrap_or_else(fallback);
-    let loop_db=rate_from_q23(&record[0x3a..0x3e]).unwrap_or(0.0);
+    // ABI names are legacy: 0x2e is the in-loop rate; 0x3a is pre-loop.
+    let post_loop_db=rate_from_q23(&record[0x2e..0x32]).unwrap_or_else(fallback);
+    let pre_loop_db=rate_from_q23(&record[0x3a..0x3e]).unwrap_or(0.0);
     let coefficient=|db:f64|10f64.powf(-db/(20.0*codec::RATE as f64))as f32;
     let mut trim=i16::from_be_bytes(record[0x34..0x36].try_into().unwrap())as i32;
     if version==0 {trim=(trim-i16::from_be_bytes(record[0x32..0x34].try_into().unwrap())as i32)*10;}
@@ -75,7 +76,7 @@ fn metadata(record:&[u8;118],root:u8,bank:u8,pcm:&[i16],channels:u16,loop_start:
         let coefficient=(-std::f64::consts::TAU*3000.0/codec::RATE as f64).exp();let mut states=[0.0f64;2];let mut peak=1.0f64;for (i,&v) in pcm.iter().enumerate(){let ch=i%channels as usize;states[ch]=coefficient*states[ch]+(1.0-coefficient)*v as f64;peak=peak.max(states[ch].abs());}0.65*32768.0/peak as f32
     };
     let release_ms=if record[0x72]==0{500.0}else{(2.0*2f32.powf(record[0x72]as f32/6.0)).clamp(10.0,4000.0)};
-    (coefficient(attack_db),coefficient(loop_db),gain,release_ms)
+    (coefficient(post_loop_db),coefficient(pre_loop_db),gain,release_ms)
 }
 pub struct Library { name: std::ffi::CString, keys: [u8; 128], fine: [i8; 128], key_gain:[f32;128], recordings: Vec<Recording>, gain: f32, damper: u8 }
 fn load(path: &str,progress:&mut Progress) -> Result<Library, Box<dyn std::error::Error>> {

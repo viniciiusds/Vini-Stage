@@ -24,3 +24,5 @@
 - String Res is explicitly deferred to docs/BACKLOG.md; do not implement without a new user request. Preserve the standalone icon: approved option 1: smaller white uppercase VS above a compact framed piano keyboard on the plugin red gradient, source in assets/ViniStage.svg and raster in assets/ViniStage.png, wired through JUCE ICON_BIG/ICON_SMALL.
 
 - macOS icons must use assets/ViniStage.icns generated with assets/make-icon.py (legacy RGB/masks for small sizes, PNG for Retina). Replace JUCE-generated ICNS at configure time; its 16px PNG icp4 chunk produced visible corruption. Test decoded pixels, not just the presence of icon sizes.
+
+- As of 0.6.5, pre-loop uses legacy bridge loop_decay (record 0x3a) scaled by playback step; in-loop uses legacy attack_decay (record 0x2e) scaled by source/host rate. Do not invert these phases again. Voice names preLoopDecay/postLoopDecay express their actual application. Fixed +10 dB is applied once after A+B sum; faders stay at max 0 dB. Keep the independent sine fixture phase/transposition/output-gain regression.

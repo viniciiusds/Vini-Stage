@@ -1,5 +1,7 @@
 # Motor e carregamento — 0.6.0
 
+> Histórico: a associação das fases de decaimento descrita nesta versão estava invertida e foi corrigida na [0.6.5](ENGINE-0.6.5.md). A 0.6.5 também acrescenta +10 dB na saída. A falta anterior de comparação de áudio foi parcialmente suprida pelos WAVs do Royal enviados pelo usuário.
+
 Esta versão implementa relações de DSP e metadados observadas por análise estática do caminho de piano do Sharp Stage Pianos 2.1.0, cruzada em ARM64 e x86_64. A implementação é própria. O binário, projeto de engenharia reversa e pseudocódigo permanecem fora deste repositório. Não houve comparação auditiva com o Sharp ativado neste M4.
 
 ## Reprodução

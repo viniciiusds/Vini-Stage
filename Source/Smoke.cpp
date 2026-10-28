@@ -5,6 +5,8 @@ int testLayers(juce::AudioPluginFormatManager&,const juce::PluginDescription&,co
 
 int testPlayability(juce::AudioPluginInstance&,const juce::String&,const juce::File&);
 
+int testDecayPhases(juce::AudioPluginInstance&);
+
 int inspectReference(juce::AudioPluginInstance&);
 int renderReference(juce::AudioPluginInstance&,const juce::File&,const juce::File&);
 
@@ -47,6 +49,7 @@ int main(int argc,char** argv) {
     if(!loaded){std::cerr<<"Sample loading timed out\n";return 4;}
     if(argc>=5&&juce::String(argv[3])=="--playability")
         return testPlayability(*plugin,juce::File(argv[2]).getFullPathName(),juce::File(argv[4]));
+    if(argc>=4&&juce::String(argv[3])=="--decay-regression")return testDecayPhases(*plugin);
     int tests=0;
     for(int note=21;note<=108;++note) for(int velocity: {1,32,64,96,127}) {
         midi.addEvent(juce::MidiMessage::allSoundOff(1),0);

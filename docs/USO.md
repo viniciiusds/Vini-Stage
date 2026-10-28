@@ -1,4 +1,4 @@
-# Vini Stage 0.6.4 — versão de teste
+# Vini Stage 0.6.5 — versão de teste
 
 ## Instalação
 
@@ -14,15 +14,19 @@ Os dois timbres recebem MIDI e são somados. Cada fader tem passos de 1 dB entre
 
 O teclado de 88 teclas responde ao mouse e destaca notas MIDI recebidas. CC64 controla o sustain. Cada seção possui 128 vozes, usadas também pelos samples de release.
 
-## Som do motor 0.6.0, mantido na 0.6.4
+## Motor de áudio 0.6.5
 
-A entrada de velocity agora é neutra: foi removido o Drive interno −0,50. Comece com o efeito Velocity do Live neutro e depois ajuste conforme o controlador. Seleção da camada e ganho da voz são calculados separadamente. Trim por sample, correção por tecla, filtro por voz e decaimento por metadados substituem aproximações anteriores.
+Os coeficientes antes e durante o loop foram corrigidos; a associação anterior fazia a nota perder corpo cedo demais e manter uma cauda muito baixa por mais tempo. Cada fase preserva sua regra de transposição.
+
+A saída recebe +10 dB fixos após a soma A+B, inclusive ao reabrir projetos antigos. Os faders mantêm o máximo de 0 dB. Não há limitação automática da soma; reduza os faders se a saída exceder 0 dBFS.
+
+A entrada de velocity é neutra: foi removido o Drive interno −0,50. Comece com o efeito Velocity do Live neutro e depois ajuste conforme o controlador. Seleção da camada e ganho da voz são calculados separadamente. Trim por sample, correção por tecla, filtro por voz e decaimento por metadados substituem aproximações anteriores.
 
 O release não usa mais 2% da velocity inicial. Ele acompanha a amplitude recente da nota, então uma nota que já decaiu tende a produzir menos release. O sustain adia o disparo até o abafamento. Note-offs sem nota ativa, repetições de pedal-up e comandos de panic não devem iniciar samples extras.
 
 A soltura da voz principal é exponencial, com referência de 500 ms ajustada por sample; esse tempo corresponde à queda de −80 dB. Substitui os antigos 90 ms lineares por solicitação do usuário para aproximar o comportamento observado no Sharp.
 
-Para comparar volume com o Sharp, alinhe os níveis de saída. O Vini não tem master separado; o padrão observado do master do Sharp era −6 dB. Desative reverb, EQ, compressão e efeitos MIDI compensatórios durante o teste. A equivalência sonora ainda precisa ser avaliada com o Sharp ativado no High Sierra.
+Para comparar volume com o Sharp, alinhe os níveis de saída. O Vini não tem master separado; o padrão observado do master do Sharp era −6 dB. Desative reverb, EQ, compressão e efeitos MIDI compensatórios durante o teste. A curva foi comparada aos WAVs do Royal fornecidos pelo usuário; isso não comprova equivalência sonora em todas as notas/timbres ou ganho original igual entre os plugins.
 
 ## Memória e carregamento
 
@@ -40,4 +44,4 @@ O Ableton salva os caminhos dos dois `.npno`, os volumes e o estado legado ON/OF
 
 O build gera e instala uma cópia do VST3 em `~/Library/Audio/Plug-Ins/VST3/`. O standalone fica em `build/NpnoPlayer_artefacts/Release/Standalone/Vini Stage.app`; o PKG permite escolher VST3, standalone ou ambos. Não é necessário converter os timbres para WAV.
 
-Veja [o README](../README.md) e [as notas técnicas do motor](ENGINE-0.6.0.md) para validações e limites desta versão.
+Veja [o README](../README.md) e [as notas da correção e validação](ENGINE-0.6.5.md) para validações e limites desta versão.

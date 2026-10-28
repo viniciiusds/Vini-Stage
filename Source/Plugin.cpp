@@ -51,7 +51,7 @@ public:
         if(!enabled&&!gain.isSmoothing()) voices.fill({});
     }
 private:
-    struct Voice {const NpView* recording=nullptr;double position=0,step=1;float strikeVelocity=1,level=0,envelope=1,releaseStep=0,tailGain=1,tailDecay=1,attackDecay=1,attackGain=1,peak=0,filterL=0,filterR=0,filterCoefficient=0;int note=0,channel=1;bool down=false,releasing=false;uint64_t age=0;};
+    struct Voice {const NpView* recording=nullptr;double position=0,step=1;float strikeVelocity=1,level=0,envelope=1,releaseStep=0,tailGain=1,preLoopDecay=1,postLoopDecay=1,attackGain=1,peak=0,filterL=0,filterR=0,filterCoefficient=0;int note=0,channel=1;bool down=false,releasing=false;uint64_t age=0;};
     std::array<Voice,128> voices{};
     std::array<bool,16> sustain{};
     LibraryCache::Ptr library;
@@ -125,8 +125,10 @@ private:
         *slot={}; slot->strikeVelocity=strikeVelocity; slot->recording=recording; slot->note=note; slot->channel=channel; slot->down=bank!=2; slot->age=++counter;slot->attackGain=bank==2?1.0f:0.0f;
         const double fineSemitones=(double)np_fine(library.get(),(uint8_t)note)*0.7/100.0;
         slot->step=(double)np_rate()/rate*std::pow(2.0, ((double)note-recording->root+fineSemitones)/12.0);
-        slot->tailDecay=(float)std::pow((double)recording->loop_decay,slot->step);
-        slot->attackDecay=bank==2?slot->tailDecay:(float)std::pow((double)recording->attack_decay,(double)np_rate()/rate);
+        // Legacy bridge names: loop_decay is the pre-loop/source-time rate;
+        // attack_decay is the in-loop/host-time metadata rate.
+        slot->preLoopDecay=(float)std::pow((double)recording->loop_decay,slot->step);
+        slot->postLoopDecay=bank==2?slot->preLoopDecay:(float)std::pow((double)recording->attack_decay,(double)np_rate()/rate);
         slot->filterCoefficient=(float)std::exp(-juce::MathConstants<double>::twoPi*3000.0*slot->step/(double)np_rate());
         slot->level=recording->sample_gain*(bank==2?7.6f*std::max(0.0f,strikeVelocity):np_key_gain(library.get(),(uint8_t)note)*Playback::velocityGain(velocity));
     }
@@ -183,7 +185,7 @@ private:
                     v.filterL=v.filterCoefficient*v.filterL+(1-v.filterCoefficient)*rawL;
                     v.filterR=v.filterCoefficient*v.filterR+(1-v.filterCoefficient)*rawR;
                     left[base+i]+=v.filterL*level;right[base+i]+=v.filterR*level;
-                    v.tailGain*=Playback::hasLoop(r)&&v.position>=(double)r.loop_start?v.tailDecay:v.attackDecay;
+                    v.tailGain*=Playback::hasLoop(r)&&v.position>=(double)r.loop_start?v.postLoopDecay:v.preLoopDecay;
                     v.position+=v.step;if(v.releasing)v.envelope*=v.releaseStep;
                 }
             }base+=size;
@@ -224,6 +226,7 @@ public:
     void processBlock(juce::AudioBuffer<float>& audio,juce::MidiBuffer& midi)override{
         juce::ScopedNoDenormals guard;audio.clear();keyboard.processNextMidiBuffer(midi,0,audio.getNumSamples(),true);
         for(int i=0;i<2;++i)layers[(size_t)i].process(audio,midi,enabled[(size_t)i]->load()>0.5f,Volume::snap(volumes[(size_t)i]->load()));
+        audio.applyGain(Volume::outputGain);
         midi.clear();
     }
     bool hasEditor()const override{return true;}

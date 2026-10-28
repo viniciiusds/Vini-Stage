@@ -4,7 +4,15 @@ VST3 e aplicativo standalone para carregar timbres Nord `.npno` diretamente e to
 
 ![Interface do editor compilado Vini Stage 0.6.0](docs/interface-0.6.0.png)
 
-**[Baixar Vini Stage 0.6.4 Universal.pkg — versão de teste](https://github.com/viniciiusds/Vini-Stage/releases/download/v0.6.4/Vini-Stage-0.6.4-Universal.pkg)** · [Todas as versões](https://github.com/viniciiusds/Vini-Stage/releases)
+**[Baixar Vini Stage 0.6.5 Universal.pkg — versão de teste](https://github.com/viniciiusds/Vini-Stage/releases/download/v0.6.5/Vini-Stage-0.6.5-Universal.pkg)** · [Todas as versões](https://github.com/viniciiusds/Vini-Stage/releases)
+
+## Versão 0.6.5 — decaimento corrigido e saída +10 dB
+
+Corrige os coeficientes que estavam invertidos antes e durante o loop. A nota passa a preservar mais corpo no começo e a decair corretamente na cauda sustentada. A análise dos WAVs do Royal fornecidos pelo usuário confirmou o problema.
+
+A saída recebe **+10 dB fixos após a soma A+B**. Os faders continuam entre −60 e 0 dB, mais mute; projetos existentes também passam a usar o novo ganho. Não há limitador automático: ajuste os níveis quando a soma exceder 0 dBFS.
+
+[Validação e comparação de decaimento](docs/ENGINE-0.6.5.md).
 
 ## Versão 0.6.4 — novo ícone com teclas de piano
 
@@ -14,7 +22,7 @@ Novo ícone: **VS** menor na parte superior e teclado compacto abaixo, com o mes
 
 O standalone recebe um ícone vermelho com as letras brancas **VS** e teclas de piano, usando o mesmo degradê do painel do plugin. O ícone inclui tamanhos próprios para Finder e Dock. Fontes do desenho em [assets/ViniStage.svg](assets/ViniStage.svg).
 
-**String Res permanece adiado**, registrado no [backlog](docs/BACKLOG.md). O motor de áudio e o layout permanecem os da versão anterior.
+**String Res permanece adiado**, registrado no [backlog](docs/BACKLOG.md). O layout visual é preservado na versão 0.6.5.
 
 ## Instalador 0.6.1 — escolha os componentes
 
@@ -75,7 +83,7 @@ O build instala o VST3 assinado ad-hoc em `~/Library/Audio/Plug-Ins/VST3/`. O st
 
 ```bash
 bash package.sh
-python3 packaging/test_package.py dist/Vini-Stage-0.6.4-Universal.pkg
+python3 packaging/test_package.py dist/Vini-Stage-0.6.5-Universal.pkg
 ```
 
 Os testes de pacote usam diretórios temporários e não executam instalação real. Para Developer ID Installer, `package.sh` aceita `INSTALLER_SIGN_IDENTITY`; notarização exige um fluxo adicional.
