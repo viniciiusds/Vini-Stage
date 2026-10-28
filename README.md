@@ -2,9 +2,13 @@
 
 VST3 e aplicativo standalone para carregar timbres Nord `.npno` diretamente e tocar por MIDI. Dois timbres opcionais A/B, controles simples e teclado visual de 88 teclas. Compatível com **Intel/High Sierra 10.13** e **Apple Silicon/M4**.
 
-![Interface do editor compilado Vini Stage 0.6.0](docs/interface-0.6.0.png)
+![Interface do editor compilado Vini Stage 0.6.6](docs/interface-0.6.6.png)
 
-**[Baixar Vini Stage 0.6.5 Universal.pkg — versão de teste](https://github.com/viniciiusds/Vini-Stage/releases/download/v0.6.5/Vini-Stage-0.6.5-Universal.pkg)** · [Todas as versões](https://github.com/viniciiusds/Vini-Stage/releases)
+**[Baixar Vini Stage 0.6.6 Universal.pkg — versão de teste](https://github.com/viniciiusds/Vini-Stage/releases/download/v0.6.6/Vini-Stage-0.6.6-Universal.pkg)** · [Todas as versões](https://github.com/viniciiusds/Vini-Stage/releases)
+
+## Versão 0.6.6 — identificação da versão e ajuste do nome
+
+O nome **vini stage** usa um espaço normal entre as palavras. A versão atual aparece em fonte pequena no canto superior direito e acompanha automaticamente a versão compilada. Mantém o motor de áudio da 0.6.5.
 
 ## Versão 0.6.5 — decaimento corrigido e saída +10 dB
 
@@ -83,7 +87,7 @@ O build instala o VST3 assinado ad-hoc em `~/Library/Audio/Plug-Ins/VST3/`. O st
 
 ```bash
 bash package.sh
-python3 packaging/test_package.py dist/Vini-Stage-0.6.5-Universal.pkg
+python3 packaging/test_package.py dist/Vini-Stage-0.6.6-Universal.pkg
 ```
 
 Os testes de pacote usam diretórios temporários e não executam instalação real. Para Developer ID Installer, `package.sh` aceita `INSTALLER_SIGN_IDENTITY`; notarização exige um fluxo adicional.

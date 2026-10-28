@@ -1,4 +1,6 @@
-# Vini Stage 0.6.5 — versão de teste
+# Vini Stage 0.6.6 — versão de teste
+
+A versão compilada aparece no canto superior direito da interface.
 
 ## Instalação
 

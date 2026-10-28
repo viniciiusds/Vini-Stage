@@ -347,8 +347,9 @@ class Editor final:public juce::AudioProcessorEditor,private juce::Timer {
 public:
     explicit Editor(Player& p):AudioProcessorEditor(p),player(p),first(p,0),second(p,1),keys(p.keyboard),texture(Hardware::grain()){
         setLookAndFeel(&look);addAndMakeVisible(first);addAndMakeVisible(second);addAndMakeVisible(keys);
-        logo.addLineOfText(Hardware::font(26,true),"vini",20,0);
-        logo.addLineOfText(juce::Font(juce::FontOptions(26).withStyle("Medium")),"stage",67,0);
+        logo.addLineOfText(Hardware::font(26,true),"vini ",20,0);
+        const auto stageX=logo.getGlyph(logo.getNumGlyphs()-1).getRight();
+        logo.addLineOfText(juce::Font(juce::FontOptions(26).withStyle("Medium")),"stage",stageX,0);
         juce::Path logoOutline;logo.createPath(logoOutline);
         // Align visible glyphs, including the g descender, to the panel's bottom.
         logo.moveRangeOfGlyphs(0,-1,0,levelsBounds().getBottom()-logoOutline.getBounds().getBottom());
@@ -377,6 +378,8 @@ public:
         g.saveState();juce::Path clip;clip.addRoundedRectangle(r,12);g.reduceClipRegion(clip);g.setTiledImageFill(texture,0,0,1);g.fillRect(r);g.restoreState();
         g.setColour(juce::Colour(0xffed6a67).withAlpha(0.65f));g.drawRoundedRectangle(r.reduced(1),11,1);
         g.setColour(juce::Colour(0xffe2e5e1));logo.draw(g);
+        g.setFont(Hardware::font(12));
+        g.drawText("v" JucePlugin_VersionString,getWidth()-112,14,90,18,juce::Justification::centredRight);
         auto frame=keys.getBounds().toFloat().expanded(5);
         g.setColour(juce::Colour(0xff020606));g.fillRoundedRectangle(frame,5);
         g.setColour(juce::Colour(0xff525c5b));g.drawRoundedRectangle(frame,5,1);
