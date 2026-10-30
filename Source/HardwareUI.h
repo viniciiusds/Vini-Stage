@@ -59,7 +59,7 @@ public:
         g.setColour(juce::Colour(0xff737c7d));g.fillRoundedRectangle(centre-4,top-1,8,bottom-top+2,3);
         g.setColour(juce::Colour(0xff020606));g.fillRoundedRectangle(centre-3,top,6,bottom-top,3);
         for(int i=0;i<=12;++i){float at=top+(bottom-top)*(float)i/12.0f;g.setColour(juce::Colour(0xffc0c9c9));g.drawLine(centre-17,at,centre-11,at,1);g.drawLine(centre+11,at,centre+17,at,1);}
-        juce::Rectangle<float> cap(centre-16,juce::jlimit(top,bottom,sliderPos)-14,32,28);
+        juce::Rectangle<float> cap(centre-16,juce::jlimit(top,bottom,sliderPos)-10,32,20);
         g.setColour(juce::Colours::black.withAlpha(0.55f));g.fillRoundedRectangle(cap.translated(2,3),2);
         g.setGradientFill(juce::ColourGradient(juce::Colour(0xffe0e4e3),cap.getTopLeft(),juce::Colour(0xff888f90),cap.getBottomLeft(),false));g.fillRoundedRectangle(cap,2);
         g.setColour(juce::Colour(0xfff1f3f0));g.drawRoundedRectangle(cap.reduced(1),1,1);

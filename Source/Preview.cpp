@@ -109,6 +109,16 @@ int main(int argc,char** argv){
     }
     std::unique_ptr<juce::AudioProcessorEditor> editor(processor->createEditor());
     editor->setVisible(true);
+    if(auto* button=dynamic_cast<juce::Button*>(findTitle(*editor,"Dynamic compression"))){
+        auto* p=parameter(*processor,"Dyn Comp");
+        for(int level:{1,2,3,0}){
+            button->onClick();require(std::abs(p->getValue()-(float)level/3)<1e-6,"Dyn Comp button did not cycle correctly");
+            auto image=editor->createComponentSnapshot(editor->getLocalBounds());
+            auto lit=[&](int y){auto colour=image.getPixelAt(464,y);return colour.getRed()>150&&colour.getGreen()<150;};
+            require(lit(160)==(level>=2)&&lit(184)==((level&1)!=0),"Dyn Comp LED mapping incorrect");
+        }
+        std::cout<<"PASS Dyn Comp button cycles OFF / 1 / 2 / 3 / OFF\n";
+    }
     testFaderDrag(*processor,*editor);
     parameter(*processor,"Sound 1 Volume")->setValueNotifyingHost(1);
     auto* fader=dynamic_cast<juce::Slider*>(findTitle(*editor,"Sound 1 Volume"));require(fader!=nullptr,"Vertical fader missing");
@@ -176,5 +186,6 @@ int main(int argc,char** argv){
     }
     std::cout<<"PASS real editor fader: 1 dB keyboard steps, integer snapping, 0 dB cap and mute\n";
     editor.reset();processor->prepareToPlay(48000,256);
+    if(argc==3&&juce::String(argv[2])=="--dyn-comp-3")parameter(*processor,"Dyn Comp")->setValueNotifyingHost(1);
     return captureEditor(*processor,juce::File(argv[1]),argc>=4);
 }

@@ -1,6 +1,7 @@
 #include <JuceHeader.h>
 #include "Bridge.h"
 #include "Volume.h"
+#include "DynComp.h"
 #include "Playback.h"
 #include "LibraryCache.h"
 #include "HardwareUI.h"
@@ -35,10 +36,11 @@ public:
          message=filePath.isEmpty()?"Select a Nord .npno sound":"Loading "+juce::File(filePath).getFileName()+"...";}
         condition.notify_one();
     }
-    void process(juce::AudioBuffer<float>& audio,const juce::MidiBuffer& midi,bool enabled,float volume) {
+    void process(juce::AudioBuffer<float>& audio,const juce::MidiBuffer& midi,bool enabled,float volume,int compression) {
         std::unique_lock<std::mutex> lock(mutex,std::try_to_lock);
         if(!lock.owns_lock()){droppedMidi.store(true);return;}
         if(droppedMidi.exchange(false)) clearVoices();
+        dynComp=compression;
         gain.setTargetValue(enabled?volume:0.0f);
         if(!library||silenced){gain.skip(audio.getNumSamples());return;}
         int cursor=0;
@@ -62,7 +64,7 @@ private:
     std::atomic<bool> stopping{false};
     std::atomic<uint64_t> generation{0};uint64_t counter=0;bool cacheHit=false;
     juce::String path,requestedPath,message="Select a Nord .npno sound";
-    double rate=44100;float peakDecay=0.9995f;
+    double rate=44100;float peakDecay=0.9995f;int dynComp=0;
     juce::SmoothedValue<float> gain{1.0f};
     std::atomic<bool> droppedMidi{false};
     std::atomic<uint64_t> progressState{0};
@@ -130,7 +132,7 @@ private:
         slot->preLoopDecay=(float)std::pow((double)recording->loop_decay,slot->step);
         slot->postLoopDecay=bank==2?slot->preLoopDecay:(float)std::pow((double)recording->attack_decay,(double)np_rate()/rate);
         slot->filterCoefficient=(float)std::exp(-juce::MathConstants<double>::twoPi*3000.0*slot->step/(double)np_rate());
-        slot->level=recording->sample_gain*(bank==2?7.6f*std::max(0.0f,strikeVelocity):np_key_gain(library.get(),(uint8_t)note)*Playback::velocityGain(velocity));
+        slot->level=recording->sample_gain*(bank==2?7.6f*std::max(0.0f,strikeVelocity):np_key_gain(library.get(),(uint8_t)note)*Playback::velocityGain(velocity)*DynComp::gain(velocity,dynComp));
     }
     void damp(Voice& voice){
         if(!voice.recording||voice.recording->bank==2||voice.releasing)return;
@@ -202,6 +204,8 @@ public:
     static juce::String volumeID(int i){return "layer"+juce::String(i+1)+"Volume";}
     juce::AudioProcessorValueTreeState parameters;
     juce::MidiKeyboardState keyboard;
+    static constexpr const char* dynCompID="dynComp";
+    int dynCompLevel()const{return juce::jlimit(0,3,juce::roundToInt(parameters.getRawParameterValue(dynCompID)->load()));}
     const juce::String getName()const override{return "Vini Stage";}
     bool acceptsMidi()const override{return true;}
     bool producesMidi()const override{return false;}
@@ -225,7 +229,8 @@ public:
     }
     void processBlock(juce::AudioBuffer<float>& audio,juce::MidiBuffer& midi)override{
         juce::ScopedNoDenormals guard;audio.clear();keyboard.processNextMidiBuffer(midi,0,audio.getNumSamples(),true);
-        for(int i=0;i<2;++i)layers[(size_t)i].process(audio,midi,enabled[(size_t)i]->load()>0.5f,Volume::snap(volumes[(size_t)i]->load()));
+        const int compression=dynCompLevel();
+        for(int i=0;i<2;++i)layers[(size_t)i].process(audio,midi,enabled[(size_t)i]->load()>0.5f,Volume::snap(volumes[(size_t)i]->load()),compression);
         audio.applyGain(Volume::outputGain);
         midi.clear();
     }
@@ -246,9 +251,12 @@ public:
             for(auto child:state)for(int i=0;i<2;++i)
                 if(child.getProperty("id").toString()==volumeID(i))
                     child.setProperty("value",Volume::snap((float)child.getProperty("value",1.0f)),nullptr);
+            bool hasDynComp=false;
+            for(auto child:state)if(child.getProperty("id").toString()==dynCompID)hasDynComp=true;
+            if(!hasDynComp){juce::ValueTree value("PARAM");value.setProperty("id",dynCompID,nullptr);value.setProperty("value",0,nullptr);state.appendChild(value,nullptr);}
             parameters.replaceState(state);
         }
-        else for(int i=0;i<2;++i){parameters.getParameter(onID(i))->setValueNotifyingHost(1.0f);parameters.getParameter(volumeID(i))->setValueNotifyingHost(1.0f);}
+        else {parameters.getParameter(dynCompID)->setValueNotifyingHost(0);for(int i=0;i<2;++i){parameters.getParameter(onID(i))->setValueNotifyingHost(1.0f);parameters.getParameter(volumeID(i))->setValueNotifyingHost(1.0f);}}
         std::array<juce::String,2> paths{};paths[0]=xml->getStringAttribute("samplePath");
         for(auto* slot:xml->getChildIterator())if(slot->hasTagName("Slot")){int i=slot->getIntAttribute("index",-1);if(i>=0&&i<2)paths[(size_t)i]=slot->getStringAttribute("samplePath");}
         for(int i=0;i<2;++i)layers[(size_t)i].loadFile(paths[(size_t)i],true);
@@ -268,6 +276,7 @@ private:
                 .withStringFromValueFunction([](float value,int){int db=Volume::decibels(value);return db==Volume::muteDb?juce::String("-inf dB"):juce::String(db)+" dB";})
                 .withValueFromStringFunction([](const juce::String& text){return text.containsIgnoreCase("inf")||text.containsChar((juce::juce_wchar)0x221e)?0.0f:Volume::linear(juce::roundToInt(text.getFloatValue()));});
             layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID(volumeID(i),1),name+" Volume",range,1.0f,attributes));}
+        layout.add(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID(dynCompID,1),"Dyn Comp",juce::StringArray{"OFF","1","2","3"},0));
         return layout;
     }
 };
@@ -343,10 +352,26 @@ public:
     juce::String getWhiteNoteText(int)override{return {};}
 };
 
+class DynCompButton final:public juce::Button {
+public:
+    DynCompButton():juce::Button("Dyn Comp"){setTitle("Dynamic compression");setWantsKeyboardFocus(true);}
+    void paintButton(juce::Graphics& g,bool hover,bool pressed)override{
+        auto r=getLocalBounds().toFloat();
+        g.setColour(juce::Colour(0xff020404));g.fillRect(r);
+        g.setColour(juce::Colour(0xff515a5b));g.drawRect(r.reduced(1),1);
+        auto face=r.reduced(5,4);
+        g.setGradientFill(juce::ColourGradient(juce::Colour(pressed?0xff202728:hover?0xff4b5354:0xff3b4142),face.getTopLeft(),juce::Colour(0xff141819),face.getBottomLeft(),false));g.fillRoundedRectangle(face,8);
+        g.setColour(juce::Colour(0xff555c5c));g.drawRoundedRectangle(face.reduced(0.5f),8,0.6f);
+        if(hasKeyboardFocus(true)){g.setColour(juce::Colour(0xffe8eeee));g.drawRect(r.reduced(2),1);}
+    }
+};
+
 class Editor final:public juce::AudioProcessorEditor,private juce::Timer {
 public:
     explicit Editor(Player& p):AudioProcessorEditor(p),player(p),first(p,0),second(p,1),keys(p.keyboard),texture(Hardware::grain()){
-        setLookAndFeel(&look);addAndMakeVisible(first);addAndMakeVisible(second);addAndMakeVisible(keys);
+        setLookAndFeel(&look);addAndMakeVisible(dynButton);
+        dynButton.onClick=[this]{auto* p=player.parameters.getParameter(Player::dynCompID);p->beginChangeGesture();p->setValueNotifyingHost((float)((player.dynCompLevel()+1)%4)/3.0f);p->endChangeGesture();refresh();};
+        addAndMakeVisible(first);addAndMakeVisible(second);addAndMakeVisible(keys);
         logo.addLineOfText(Hardware::font(26,true),"vini ",20,0);
         const auto stageX=logo.getGlyph(logo.getNumGlyphs()-1).getRight();
         logo.addLineOfText(juce::Font(juce::FontOptions(26).withStyle("Medium")),"stage",stageX,0);
@@ -384,28 +409,44 @@ public:
         g.setColour(juce::Colour(0xff020606));g.fillRoundedRectangle(frame,5);
         g.setColour(juce::Colour(0xff525c5b));g.drawRoundedRectangle(frame,5,1);
         auto panel=levelsBounds();
-        g.setColour(juce::Colour(0xffa1abab));g.fillRoundedRectangle(panel,8);
-        panel=panel.reduced(2);g.setGradientFill(juce::ColourGradient(juce::Colour(0xff303b40),panel.getTopLeft(),juce::Colour(0xff1b252a),panel.getBottomRight(),false));g.fillRoundedRectangle(panel,7);
-        g.saveState();g.reduceClipRegion(panel.toNearestInt());g.setTiledImageFill(texture,0,0,1);g.fillRect(panel);g.restoreState();
-        auto header=juce::Rectangle<float>(143,23,309,35);
-        g.setGradientFill(juce::ColourGradient(juce::Colour(0xffd8dcd9),header.getTopLeft(),juce::Colour(0xff9fa8a7),header.getBottomLeft(),false));g.fillRoundedRectangle(header,4);
+        juce::Path panelClip;panelClip.addRoundedRectangle(panel,8);
+        g.saveState();g.reduceClipRegion(panelClip);
+        g.setGradientFill(juce::ColourGradient(juce::Colour(0xff303b40),panel.getTopLeft(),juce::Colour(0xff1b252a),panel.getBottomRight(),false));g.fillRect(panel);
+        g.setTiledImageFill(texture,0,0,1);g.fillRect(panel);
+        auto header=panel.withHeight(35);
+        g.setGradientFill(juce::ColourGradient(juce::Colour(0xffd8dcd9),header.getTopLeft(),juce::Colour(0xff9fa8a7),header.getBottomLeft(),false));g.fillRect(header);
+        g.restoreState();
         g.setColour(juce::Colour(0xff172126));g.setFont(Hardware::font(18));g.drawText("L E V E L S",header,juce::Justification::centred);
-        Hardware::lcd(g,{465,20,395,200});
-        g.setColour(juce::Colour(0xffe8eeee));g.setFont(Hardware::font(25,true));g.drawText("Sounds",490,50,340,34,juce::Justification::centredLeft);
-        g.setColour(juce::Colour(0xffbfc8c6));g.drawLine(490,95,835,95,1);
+        // Two LEDs encode OFF / 1 / 2 / 3; both light for level 3.
+        // Centre in the free area between B’s LED column (x=412) and the panel edge (x=515).
+        g.saveState();g.addTransform(juce::AffineTransform::translation(13.5f,0));
+        g.setColour(juce::Colour(0xffe8eeee));g.setFont(Hardware::font(11));
+        g.drawText("DYN COMP",414,130,72,16,juce::Justification::centred);
+        g.drawText("2",423,152,12,16,juce::Justification::centred);
+        g.drawText("1",423,176,12,16,juce::Justification::centred);
+        g.drawText("3",460,164,12,16,juce::Justification::centred);
+        Hardware::led(g,{450,160},player.dynCompLevel()>=2);Hardware::led(g,{450,184},(player.dynCompLevel()&1)!=0);
+        g.restoreState();
+        Hardware::lcd(g,{525,20,335,200});
+        g.setColour(juce::Colour(0xffe8eeee));g.setFont(Hardware::font(25,true));g.drawText("Sounds",550,50,285,34,juce::Justification::centredLeft);
+        g.setColour(juce::Colour(0xffbfc8c6));g.drawLine(550,95,835,95,1);
     }
     void resized()override{
+        dynButton.setBounds(440,204,48,24);
         first.setBounds(163,70,124,222);second.setBounds(308,70,124,222);
-        rows[0].setBounds(486,113,350,34);rows[1].setBounds(486,155,350,34);
-        buttons[0].setBounds(506,240,120,44);buttons[1].setBounds(700,240,120,44);
+        rows[0].setBounds(546,113,290,34);rows[1].setBounds(546,155,290,34);
+        buttons[0].setBounds(556,240,120,44);buttons[1].setBounds(710,240,120,44);
         keys.setBounds(22,322,956,92);keys.setKeyWidth(956.0f/52.0f);keys.setLowestVisibleKey(21);
     }
 private:
-    Player& player;Hardware::Look look;VolumePanel first,second;PianoKeyboard keys;juce::Image texture;juce::GlyphArrangement logo;
-    static juce::Rectangle<float> levelsBounds(){return {140,20,315,280};}
+    Player& player;Hardware::Look look;VolumePanel first,second;PianoKeyboard keys;DynCompButton dynButton;juce::Image texture;juce::GlyphArrangement logo;
+    static juce::Rectangle<float> levelsBounds(){return {140,20,375,280};}
     std::array<juce::Label,2> rows;std::array<juce::TextButton,2> buttons;
     std::unique_ptr<juce::FileChooser> chooser;
     void refresh(){
+        const auto level=player.dynCompLevel();
+        dynButton.setTooltip("Dyn Comp: "+(level==0?juce::String("OFF"):juce::String(level))+"; click to cycle OFF / 1 / 2 / 3");
+        dynButton.setDescription(dynButton.getTooltip());repaint();
         for(int i=0;i<2;++i){auto letter=i==0?juce::String("A"):juce::String("B");
             rows[(size_t)i].setText(letter+":"+(player.status(i).isEmpty()?juce::String{}:" "+player.status(i)),juce::dontSendNotification);
             rows[(size_t)i].setTooltip(player.status(i));
