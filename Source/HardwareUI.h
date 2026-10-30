@@ -15,7 +15,7 @@ inline juce::Font font(float height,bool bold=false) {
     return juce::Font(juce::FontOptions(height).withStyle(bold?"Bold":"Regular"));
 }
 inline void lcd(juce::Graphics& g,juce::Rectangle<float> r) {
-    g.setColour(juce::Colour(0xff858b85));g.fillRoundedRectangle(r,3);
+    g.setColour(juce::Colour(0xff080c0b));g.fillRoundedRectangle(r,3);
     r=r.reduced(1.5f);
     g.setGradientFill(juce::ColourGradient(juce::Colour(0xff010403),r.getTopLeft(),juce::Colour(0xff101714),r.getBottomRight(),false));
     g.fillRoundedRectangle(r,2);
@@ -42,12 +42,11 @@ public:
     void drawButtonBackground(juce::Graphics& g,juce::Button& button,const juce::Colour&,bool over,bool down)override {
         auto r=button.getLocalBounds().toFloat().reduced(2);
         g.setColour(juce::Colours::black.withAlpha(0.6f));g.fillRoundedRectangle(r.translated(0,2),3);
-        g.setColour(juce::Colour(0xff646c6d));g.fillRoundedRectangle(r,3);r=r.reduced(1.5f);
+        g.setColour(juce::Colour(0xff080a0b));g.fillRoundedRectangle(r,3);r=r.reduced(1.5f);
         g.setColour(juce::Colour(0xff080a0b));g.fillRoundedRectangle(r,2);r=r.reduced(3);
         bool power=button.getComponentID()=="power";
         auto top=down?juce::Colour(0xff14191a):juce::Colour(over?0xff41484a:0xff303637);
         g.setGradientFill(juce::ColourGradient(top,r.getTopLeft(),juce::Colour(0xff111516),r.getBottomLeft(),false));g.fillRoundedRectangle(r,2);
-        g.setColour(juce::Colour(0xff747b7b).withAlpha(down?0.15f:0.5f));g.drawLine(r.getX()+3,r.getY()+1,r.getRight()-3,r.getY()+1,1);
         if(power){auto strip=r.withHeight(4).reduced(5,0).translated(0,5);g.setColour(button.getToggleState()?juce::Colour(0xffff3934):juce::Colour(0xff596162));g.fillRoundedRectangle(strip,1);}
     }
     void drawButtonText(juce::Graphics& g,juce::TextButton& button,bool,bool)override {

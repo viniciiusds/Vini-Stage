@@ -1,4 +1,4 @@
-# Vini Stage 1.1.0 — versão de teste
+# Vini Stage 1.1.1 — versão de teste
 
 Dyn Comp: clique para alternar OFF, 1, 2 e 3. O LED de baixo indica 1; o de cima, 2; ambos, 3. Em OFF, nenhum acende. Máximos de +2/+3/+4 dB para notas suaves, diminuindo até zero na velocity 127. O ajuste vale para A/B, é salvo com o projeto e afeta novas notas. Projetos anteriores abrem em OFF. A versão oficial 1.0.0 permanece sem Dyn Comp.
 

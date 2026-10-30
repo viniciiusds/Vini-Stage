@@ -362,7 +362,6 @@ public:
         auto face=r.reduced(5,4);
         g.setGradientFill(juce::ColourGradient(juce::Colour(pressed?0xff202728:hover?0xff4b5354:0xff3b4142),face.getTopLeft(),juce::Colour(0xff141819),face.getBottomLeft(),false));g.fillRoundedRectangle(face,8);
         g.setColour(juce::Colour(0xff555c5c));g.drawRoundedRectangle(face.reduced(0.5f),8,0.6f);
-        if(hasKeyboardFocus(true)){g.setColour(juce::Colour(0xffe8eeee));g.drawRect(r.reduced(2),1);}
     }
 };
 

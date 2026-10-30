@@ -2,11 +2,15 @@
 
 VST3 e aplicativo standalone para carregar timbres Nord `.npno` diretamente e tocar por MIDI. Dois timbres opcionais A/B, controles simples e teclado visual de 88 teclas. Compatível com **Intel/High Sierra 10.13** e **Apple Silicon/M4**.
 
-![Interface do editor compilado Vini Stage 1.1.0 de teste](docs/interface-1.1.0.png)
+![Interface do editor compilado Vini Stage 1.1.1 de teste](docs/interface-1.1.1.png)
 
 **[Baixar Vini Stage 1.0.0 Universal.pkg — versão oficial](https://github.com/viniciiusds/Vini-Stage/releases/download/v1.0.0/Vini-Stage-1.0.0-Universal.pkg)** · [Todas as versões](https://github.com/viniciiusds/Vini-Stage/releases)
 
-**[Baixar Vini Stage 1.1.0 Universal.pkg — versão de teste com Dyn Comp](https://github.com/viniciiusds/Vini-Stage/releases/download/v1.1.0/Vini-Stage-1.1.0-Universal.pkg)**
+**[Baixar Vini Stage 1.1.1 Universal.pkg — versão de teste com Dyn Comp](https://github.com/viniciiusds/Vini-Stage/releases/download/v1.1.1/Vini-Stage-1.1.1-Universal.pkg)**
+
+## Versão 1.1.1 — ajuste visual
+
+Remove a borda clara ao focar o botão Dyn Comp e os contornos claros dos botões Select/Clear e dos visores. Mantém o motor e as curvas do Dyn Comp da 1.1.0.
 
 ## Versão 1.1.0 — teste de Dyn Comp
 
@@ -101,7 +105,7 @@ O build instala o VST3 assinado ad-hoc em `~/Library/Audio/Plug-Ins/VST3/`. O st
 
 ```bash
 bash package.sh
-python3 packaging/test_package.py dist/Vini-Stage-1.1.0-Universal.pkg
+python3 packaging/test_package.py dist/Vini-Stage-1.1.1-Universal.pkg
 ```
 
 Os testes de pacote usam diretórios temporários e não executam instalação real. Para Developer ID Installer, `package.sh` aceita `INSTALLER_SIGN_IDENTITY`; notarização exige um fluxo adicional.
