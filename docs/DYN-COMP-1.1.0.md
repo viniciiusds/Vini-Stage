@@ -1,4 +1,4 @@
-# Dyn Comp — atualizado para o teste 1.1.2
+# Dyn Comp — atualizado para a versão oficial 1.1.2
 
 Curva própria para tornar notas suaves mais audíveis sem mudar as camadas escolhidas pela velocity. Não representa uma reprodução medida dos níveis do Nord físico.
 
