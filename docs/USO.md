@@ -1,4 +1,6 @@
-# Vini Stage 0.6.6 — versão de teste
+# Vini Stage 1.0.0 — versão oficial
+
+A versão oficial 1.0.0 mantém o layout e o áudio da 0.6.6, sem Dyn Comp.
 
 A versão compilada aparece no canto superior direito da interface.
 

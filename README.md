@@ -2,9 +2,13 @@
 
 VST3 e aplicativo standalone para carregar timbres Nord `.npno` diretamente e tocar por MIDI. Dois timbres opcionais A/B, controles simples e teclado visual de 88 teclas. Compatível com **Intel/High Sierra 10.13** e **Apple Silicon/M4**.
 
-![Interface do editor compilado Vini Stage 0.6.6](docs/interface-0.6.6.png)
+![Interface do editor compilado Vini Stage 1.0.0](docs/interface-1.0.0.png)
 
-**[Baixar Vini Stage 0.6.6 Universal.pkg — versão de teste](https://github.com/viniciiusds/Vini-Stage/releases/download/v0.6.6/Vini-Stage-0.6.6-Universal.pkg)** · [Todas as versões](https://github.com/viniciiusds/Vini-Stage/releases)
+**[Baixar Vini Stage 1.0.0 Universal.pkg — versão oficial](https://github.com/viniciiusds/Vini-Stage/releases/download/v1.0.0/Vini-Stage-1.0.0-Universal.pkg)** · [Todas as versões](https://github.com/viniciiusds/Vini-Stage/releases)
+
+## Versão 1.0.0 — versão oficial
+
+Publicação oficial da versão 0.6.6, com o mesmo layout e motor de áudio. Sem Dyn Comp na interface ou no áudio.
 
 ## Versão 0.6.6 — identificação da versão e ajuste do nome
 
@@ -64,7 +68,7 @@ No M4, a primeira carga medida sem cache de áudio do plugin ficou em aproximada
 
 O mesmo PKG contém **x86_64 com mínimo macOS 10.13** e **arm64 com mínimo 11.0**. Cada componente selecionado atualiza sua versão anterior no destino fixo. A instalação do VST3 substitui versões anteriores no destino global. Uma cópia igual ou mais antiga da pasta VST3 do usuário é guardada em `~/Library/Application Support/Vini Stage/Plugin Backups/` para evitar duplicidade; versões mais novas e plugins com outra identidade são preservados. Timbres e projetos não são alterados.
 
-O PKG é de teste, sem assinatura Developer ID Installer e sem notarização Apple. Builds anteriores foram confirmados pelo usuário no High Sierra com Arturia; a nova versão ainda requer audição naquele Mac. O PKG contém VST3 e standalone selecionáveis, sem bibliotecas de timbres.
+O PKG é distribuído sem assinatura Developer ID Installer e sem notarização Apple. Builds anteriores foram confirmados pelo usuário no High Sierra com Arturia; a nova versão ainda requer audição naquele Mac. O PKG contém VST3 e standalone selecionáveis, sem bibliotecas de timbres.
 
 ## Controles e projetos
 
@@ -87,7 +91,7 @@ O build instala o VST3 assinado ad-hoc em `~/Library/Audio/Plug-Ins/VST3/`. O st
 
 ```bash
 bash package.sh
-python3 packaging/test_package.py dist/Vini-Stage-0.6.6-Universal.pkg
+python3 packaging/test_package.py dist/Vini-Stage-1.0.0-Universal.pkg
 ```
 
 Os testes de pacote usam diretórios temporários e não executam instalação real. Para Developer ID Installer, `package.sh` aceita `INSTALLER_SIGN_IDENTITY`; notarização exige um fluxo adicional.

@@ -81,4 +81,4 @@ build_product(){
 }
 if [[ -n "${INSTALLER_SIGN_IDENTITY:-}" ]]; then build_product --sign "$INSTALLER_SIGN_IDENTITY";else build_product;fi
 echo "Criado: $package"
-if [[ -z "${INSTALLER_SIGN_IDENTITY:-}" ]]; then echo "Pacote de teste sem assinatura Developer ID Installer e sem notarização.";fi
+if [[ -z "${INSTALLER_SIGN_IDENTITY:-}" ]]; then echo "Pacote sem assinatura Developer ID Installer e sem notarização.";fi
