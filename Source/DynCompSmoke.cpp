@@ -40,14 +40,14 @@ int testDynComp(juce::AudioPluginInstance& plugin){try{
             auto base=render(plugin,0,{{60,velocity}},pedal);
             for(int level=1;level<=3;++level){
                 // Independent anchors: lowest = full boost; midpoint = half; highest = none.
-                const double maximum=level+1,db=velocity==1?maximum:velocity==64?maximum/2:0;
+                const double maximum=4*level,db=velocity==1?maximum:velocity==64?maximum/2:0;
                 scaled(base,render(plugin,level,{{60,velocity}},pedal),std::pow(10.0,db/20));
             }
         }
         auto held=render(plugin,0,{{60,64}});scaled(held,render(plugin,0,{{60,64}},false,true),1);
         // Mixed velocities: each voice must keep its own gain, including the loud note.
         auto soft=render(plugin,0,{{60,1}}),loud=render(plugin,0,{{72,127}}),chord=render(plugin,3,{{60,1},{72,127}});
-        std::vector<float> expected(soft.size());for(size_t i=0;i<soft.size();++i)expected[i]=(float)(soft[i]*std::pow(10.0,4.0/20)+loud[i]);
+        std::vector<float> expected(soft.size());for(size_t i=0;i<soft.size();++i)expected[i]=(float)(soft[i]*std::pow(10.0,12.0/20)+loud[i]);
         // Before note-off, to avoid the existing release follower/voice ordering in chords.
         expected.resize(89*256*2);chord.resize(expected.size());scaled(expected,chord,1);
         std::cout<<"PASS Dyn Comp "<<rate<<" Hz: 3 gain anchors, 3 levels, sustain/release, mixed velocities, held-note stability\n";
@@ -64,8 +64,8 @@ int testDynComp(juce::AudioPluginInstance& plugin){try{
     for(int n=0;n<1200;++n){auto xml=state(plugin);int count=0;for(auto* slot:xml->getChildIterator())if(slot->hasTagName("Slot")&&slot->getBoolAttribute("ready")&&!slot->getBoolAttribute("loading"))++count;if(count==2){ready=true;break;}juce::Thread::sleep(50);}
     require(ready,"A/B load timed out");
     param(plugin,"Sound 1 On")->setValueNotifyingHost(0);
-    auto b=render(plugin,0,{{60,64}});scaled(b,render(plugin,3,{{60,64}}),std::pow(10.0,2.0/20));
+    auto b=render(plugin,0,{{60,64}});scaled(b,render(plugin,3,{{60,64}}),std::pow(10.0,6.0/20));
     param(plugin,"Sound 1 On")->setValueNotifyingHost(1);
-    scaled(b,render(plugin,0,{{60,64}}),2);scaled(b,render(plugin,3,{{60,64}}),2*std::pow(10.0,2.0/20));
+    scaled(b,render(plugin,0,{{60,64}}),2);scaled(b,render(plugin,3,{{60,64}}),2*std::pow(10.0,6.0/20));
     std::cout<<"PASS B-only and A+B: per-voice gain applied once in each slot\n";return 0;
 }catch(const std::exception& e){std::cerr<<"Dyn Comp: "<<e.what()<<"\n";return 51;}}
