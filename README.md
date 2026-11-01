@@ -2,9 +2,13 @@
 
 VST3 e aplicativo standalone para carregar timbres Nord `.npno` diretamente e tocar por MIDI. Dois timbres opcionais A/B, controles simples e teclado visual de 88 teclas. Compatível com **Intel/High Sierra 10.13** e **Apple Silicon/M4**.
 
-![Interface do editor compilado Vini Stage 1.1.2 oficial](docs/interface-1.1.2.png)
+![Interface do editor compilado Vini Stage 1.1.3 oficial](docs/interface-1.1.3.png)
 
-**[Baixar Vini Stage 1.1.2 Universal.pkg — versão oficial](https://github.com/viniciiusds/Vini-Stage/releases/download/v1.1.2/Vini-Stage-1.1.2-Universal.pkg)** · [Todas as versões](https://github.com/viniciiusds/Vini-Stage/releases)
+**[Baixar Vini Stage 1.1.3 Universal.pkg — versão oficial](https://github.com/viniciiusds/Vini-Stage/releases/download/v1.1.3/Vini-Stage-1.1.3-Universal.pkg)** · [Todas as versões](https://github.com/viniciiusds/Vini-Stage/releases)
+
+## Versão 1.1.3 — novos ganhos do Dyn Comp
+
+Versão oficial com máximos de **+5 / +10 / +14 dB** nos níveis 1/2/3, na velocity 1. Mantém a curva suave: **+2,5 / +5 / +7 dB na velocity 64** e **0 dB extra na 127**. O nível salvo no projeto é preservado e passa a usar os novos ganhos ao atualizar. OFF mantém o áudio anterior.
 
 ## Versão 1.1.2 — versão oficial com Dyn Comp
 
@@ -22,7 +26,7 @@ Layout Levels ampliado com Dyn Comp discreto ao lado dos faders. Um botão alter
 
 Curva própria por nota: ganho máximo de **+2 / +3 / +4 dB** na velocity 1, metade desses valores na 64 e **0 dB extra na 127**, com transição suave. Não muda o sample selecionado nem o envelope; notas já iniciadas mantêm seu ganho ao trocar o controle. O release acompanha a amplitude da nota, sem aplicar o ganho duas vezes. Não é uma medição dos três níveis do Nord físico.
 
-[Funcionamento e verificações do Dyn Comp, atualizado para 1.1.2](docs/DYN-COMP-1.1.0.md). A 1.0.0 permanece disponível no histórico, sem Dyn Comp.
+[Funcionamento e verificações do Dyn Comp, atualizado para 1.1.3](docs/DYN-COMP-1.1.0.md). A 1.0.0 permanece disponível no histórico, sem Dyn Comp.
 
 ## Versão 1.0.0 — versão oficial
 
@@ -109,7 +113,7 @@ O build instala o VST3 assinado ad-hoc em `~/Library/Audio/Plug-Ins/VST3/`. O st
 
 ```bash
 bash package.sh
-python3 packaging/test_package.py dist/Vini-Stage-1.1.2-Universal.pkg
+python3 packaging/test_package.py dist/Vini-Stage-1.1.3-Universal.pkg
 ```
 
 Os testes de pacote usam diretórios temporários e não executam instalação real. Para Developer ID Installer, `package.sh` aceita `INSTALLER_SIGN_IDENTITY`; notarização exige um fluxo adicional.
